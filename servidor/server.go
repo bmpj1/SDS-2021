@@ -12,8 +12,8 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
 	"text/template"
-
 	"time"
 
 	"golang.org/x/crypto/scrypt"
@@ -161,8 +161,8 @@ func crearEntrada(w http.ResponseWriter, req *http.Request) {
 	e.Date = time.Now()           // Tipo de visibilidad: publica o privada
 
 	fmt.Println("Tema:" + req.Form.Get("Name") + "Texto de la entrada: " + e.Text + " Fecha: " + e.Date.String())
-
-	temas[req.Form.Get("Name")].Entradas[e.Date.String()] = e
+	var idEntrada = strconv.Itoa(len(temas[req.Form.Get("Name")].Entradas))
+	temas[req.Form.Get("Name")].Entradas[idEntrada] = e
 
 	saveTemaData()
 	response := resp{Ok: true, Msg: "Entrada creada correctamente."}

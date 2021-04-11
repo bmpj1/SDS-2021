@@ -116,6 +116,7 @@ type User struct {
 }
 
 var loggedUser User
+var temas Tema
 var cipherKey []byte
 
 func client() {
@@ -209,8 +210,6 @@ func (uiState *uiState) Login(usuario, password string) {
 
 }
 
-//
-
 func (uiState *uiState) getTemas() {
 	data := url.Values{}
 	data.Set("cmd", "listar")
@@ -218,6 +217,7 @@ func (uiState *uiState) getTemas() {
 	var response respTemas
 	err := json.Unmarshal(jsonResponse, &response)
 	chk(err)
+	temas = response.Temas
 	if response.Ok {
 		for key, _ := range response.Temas {
 			//fmt.Println("Key:", key)
