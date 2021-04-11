@@ -216,7 +216,6 @@ func (uiState *uiState) getTemas() {
 	var response respTemas
 	err := json.Unmarshal(jsonResponse, &response)
 	chk(err)
-	temas = response.Temas
 	if response.Ok {
 		for key, _ := range response.Temas {
 			//fmt.Println("Key:", key)
