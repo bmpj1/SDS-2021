@@ -11,10 +11,17 @@ import (
 	"crypto/tls"
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"io"
+	"io/ioutil"
+	"log"
 	"net/http"
 	"net/url"
 	"os"
+	"os/signal"
+	"runtime"
+
+	"github.com/zserge/lorca"
 )
 
 // función para comprobar errores (ahorra escritura)
@@ -77,8 +84,26 @@ func decrypt(data, key []byte) (out []byte) {
 	ctr.XORKeyStream(out, data[16:])     // desciframos (doble cifrado) los datos
 	return
 }
-func client() {
 
+type uiState struct {
+	ui       lorca.UI
+	listType string
+}
+
+// respuesta del servidor
+type resp struct {
+	Ok  bool   // true -> correcto, false -> error
+	Msg string // mensaje adicional
+}
+type User struct {
+	username string
+	token    string
+}
+
+var loggedUser User
+var cipherKey []byte
+
+func client() {
 	/* creamos un cliente especial que no comprueba la validez de los certificados
 	esto es necesario por que usamos certificados autofirmados (para pruebas) */
 	tr := &http.Transport{
@@ -104,19 +129,132 @@ func client() {
 
 	// ** ejemplo de registro
 	data := url.Values{} // estructura para contener los valores
-
 	// comprimimos y codificamos la clave pública
 	data.Set("pubkey", encode64(compress(pubJSON)))
-
 	// comprimimos, ciframos y codificamos la clave privada
 	data.Set("prikey", encode64(encrypt(compress(pkJSON), keyData)))
 
 	r, err := client.PostForm("https://localhost:10443", data) // enviamos por POST
 	chk(err)
 	io.Copy(os.Stdout, r.Body) // mostramos el cuerpo de la respuesta (es un reader)
+}
+
+// Para cargar los HTML
+func (uiState *uiState) loadFile(filename string) {
+	// Load HTML.
+	b, err := ioutil.ReadFile(filename) // just pass the copia name
+	if err != nil {
+		fmt.Print(err)
+	}
+	html := string(b) // convert content to a 'string'
+	_ = uiState.ui.Load("data:text/html," + url.PathEscape(html))
+}
+
+// Para mandar las peticiones al servidor
+func sendToServer(data url.Values) []byte {
+	data.Set("user", loggedUser.username) // usuario (string)
+	data.Set("token", loggedUser.token)
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	}
+	client := &http.Client{Transport: tr}
+	petition, err := client.PostForm("https://localhost:10443", data)
+	chk(err)
+	response, err := ioutil.ReadAll(petition.Body)
+	chk(err)
+	//Paso más, pasamos a JSON simple, decodificamos JSON base 64
+	response = decode64(string(response))
+
+	return response
+}
+
+// Para asociar las funciones al html del login
+func (uiState *uiState) Login(usuario, password string) {
+	keyClient := sha512.Sum512([]byte(password))
+	keyLogin := keyClient[:32]   // una mitad para el login (256 bits)
+	cipherKey = keyClient[32:64] // Para cifrar
+	data := url.Values{}         // estructura para contener los valores
+
+	data.Set("cmd", "login")
+	data.Set("user", usuario) // usuario (string)
+	data.Set("pass", encode64(keyLogin))
+	loggedUser.username = usuario
+	jsonResponse := sendToServer(data)
+	var response resp
+	err := json.Unmarshal(jsonResponse, &response)
+	chk(err)
+
+	if response.Ok {
+		loggedUser.token = response.Msg
+		//uiState.renderMenuPage()
+		uiState.ui.Eval(`$("#errorMessage").text("Todo OK!")`)
+	} else {
+		uiState.ui.Eval(`$("#errorMessage").text("Usuario o contraseña incorrectos")`)
+	}
 
 }
 
+// Para asociar la funcion de registro al html
+func (uiState *uiState) register(usuario, password string) {
+	keyClient := sha512.Sum512([]byte(password))
+	keyLogin := keyClient[:32]   // una mitad para el login (256 bits)
+	cipherKey = keyClient[32:64] // Para cifrar
+	data := url.Values{}         // estructura para contener los valores
+
+	data.Set("cmd", "register")
+	data.Set("user", usuario) // usuario (string)
+	data.Set("pass", encode64(keyLogin))
+	loggedUser.username = usuario
+	jsonResponse := sendToServer(data)
+	var response resp
+	err := json.Unmarshal(jsonResponse, &response)
+	chk(err)
+	fmt.Println(usuario + password)
+	if response.Ok {
+		loggedUser.token = response.Msg
+		uiState.ui.Eval(fmt.Sprintf(`alert("Usuario creado correctamente.")`))
+		uiState.renderLogin()
+	} else {
+		uiState.ui.Eval(`$("#errorMessage").text("Error en el registro")`)
+	}
+
+}
+
+func (uiState *uiState) renderRegister() {
+	fmt.Println("entro a renderRegister")
+	uiState.loadFile("./www/registro.html")
+	_ = uiState.ui.Bind("submitRegister", uiState.register)
+}
+
+func (uiState *uiState) renderLogin() {
+	uiState.loadFile("./www/index.html")
+	_ = uiState.ui.Bind("submitLogin", uiState.Login)
+	_ = uiState.ui.Bind("registerPage", uiState.renderRegister)
+}
+
 func main() {
-	client()
+	var args []string
+	if runtime.GOOS == "linux" {
+		args = append(args, "--class=Lorca")
+	}
+	ui, err := lorca.New("", "", 480, 320, args...)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer ui.Close()
+
+	state := &uiState{ui: ui}
+
+	state.renderLogin()
+
+	// Wait until the interrupt signal arrives or browser window is closed
+	sigc := make(chan os.Signal)
+	signal.Notify(sigc, os.Interrupt)
+	select {
+	case <-sigc:
+	case <-ui.Done():
+	}
+
+	log.Println("exiting...")
+	//client()
 }
