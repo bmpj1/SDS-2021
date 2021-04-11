@@ -41,6 +41,12 @@ type resp struct {
 	Msg string // mensaje adicional
 }
 
+type respTemas struct {
+	Ok    bool            // true -> correcto, false -> error
+	Msg   string          // mensaje adicional
+	Temas map[string]tema //
+}
+
 var users = map[string]user{}
 var temas = map[string]tema{}
 var tokens = map[string]string{}
@@ -154,7 +160,7 @@ func crearEntrada(w http.ResponseWriter, req *http.Request) {
 	e.Text = req.Form.Get("Text") // nombre
 	e.Date = time.Now()           // Tipo de visibilidad: publica o privada
 
-	fmt.Println("Texto de la entrada: " + e.Text + " Fecha: " + e.Date.String())
+	fmt.Println("Tema:" + req.Form.Get("Name") + "Texto de la entrada: " + e.Text + " Fecha: " + e.Date.String())
 
 	temas[req.Form.Get("Name")].Entradas[e.Date.String()] = e
 
@@ -193,6 +199,16 @@ func checkUser(req *http.Request) (bool, string) {
 	return true, token
 }
 
+func listarTemas(w http.ResponseWriter, req *http.Request) {
+	rawTemas, err := ioutil.ReadFile("./db/temas.json")
+	chk(err)
+	_ = json.Unmarshal(rawTemas, &temas)
+
+	response := respTemas{Ok: true, Msg: "Lista de Temas obtenida", Temas: temas}
+	fmt.Println(response)
+	sendToClient(w, response)
+}
+
 func loginUser(w http.ResponseWriter, req *http.Request) {
 	res, msg := checkUser(req)
 	response := resp{Ok: res, Msg: msg}
@@ -220,10 +236,10 @@ func handler(w http.ResponseWriter, req *http.Request) {
 	case "crearEntrada":
 		checkToken(req.Form.Get("token"), req.Form.Get("user"), w)
 		crearEntrada(w, req)
-	/*case "listar":
+	case "listar":
 		checkToken(req.Form.Get("token"), req.Form.Get("user"), w)
-		listCopias(w, req)
-	case "versiones":
+		listarTemas(w, req)
+	/*case "versiones":
 		checkToken(req.Form.Get("token"), req.Form.Get("user"), w)
 		listVersiones(w, req)
 	case "recuperar":
