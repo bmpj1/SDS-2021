@@ -14,6 +14,8 @@ import (
 	"os/signal"
 	"text/template"
 
+	"time"
+
 	"golang.org/x/crypto/scrypt"
 )
 
@@ -23,12 +25,24 @@ type user struct {
 	Salt []byte `json:"Salt"` // sal para la contraseña
 }
 
+type entrada struct {
+	Text string
+	Date time.Time
+}
+
+type tema struct {
+	Name     string             `json:"Name"` // Nombre del tema
+	Tipo     string             `json:"Tipo"` // Tipo de tema (Publico / privado)
+	Entradas map[string]entrada // Entradas de un tema tema
+}
+
 type resp struct {
 	Ok  bool   // true -> correcto, false -> error
 	Msg string // mensaje adicional
 }
 
 var users = map[string]user{}
+var temas = map[string]tema{}
 var tokens = map[string]string{}
 
 // función para comprobar errores (ahorra escritura)
@@ -50,11 +64,18 @@ func encode64(data []byte) string {
 	return base64.StdEncoding.EncodeToString(data) // sólo utiliza caracteres "imprimibles"
 }
 
-// Guardamos los usuarios en la db
+// Guardamos los usuarios en la db de usuarios
 func saveData() {
 	jsonString, err := json.Marshal(users)
 	chk(err)
-	ioutil.WriteFile("./db/db.json", jsonString, 0644)
+	ioutil.WriteFile("./db/usuarios.json", jsonString, 0644)
+}
+
+// Guardamos los temas en la db de temas
+func saveTemaData() {
+	jsonString, err := json.Marshal(temas)
+	chk(err)
+	ioutil.WriteFile("./db/temas.json", jsonString, 0644)
 }
 
 /**
@@ -109,6 +130,22 @@ func registerUser(w http.ResponseWriter, req *http.Request) {
 	sendToClient(w, response)
 }
 
+func createTema(w http.ResponseWriter, req *http.Request) {
+	fmt.Println("estoy creando un tema...")
+
+	t := tema{}
+	t.Name = req.Form.Get("Name") // nombre
+	t.Tipo = req.Form.Get("Tipo") // Tipo de visibilidad: publica o privada
+
+	fmt.Println("Nombre del tema: " + t.Name + " Tipo de tema: " + t.Tipo)
+
+	temas[t.Name] = t
+
+	saveTemaData()
+	response := resp{Ok: true, Msg: "Tema creado correctamente."}
+	sendToClient(w, response)
+}
+
 func generateToken() string {
 	alphanum := "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
 	var token = make([]byte, 16)
@@ -145,6 +182,13 @@ func loginUser(w http.ResponseWriter, req *http.Request) {
 	sendToClient(w, response)
 }
 
+// Validar el token de un usuario logueado
+func checkToken(token, username string, w http.ResponseWriter) {
+	if token != tokens[username] {
+		response := resp{Ok: false, Msg: "Token no válido"}
+		sendToClient(w, response)
+	}
+}
 func handler(w http.ResponseWriter, req *http.Request) {
 	_ = req.ParseForm()                          // es necesario parsear el formulario
 	w.Header().Set("Content-Type", "text/plain") // cabecera estándar
@@ -153,26 +197,31 @@ func handler(w http.ResponseWriter, req *http.Request) {
 		registerUser(w, req)
 	case "login":
 		loginUser(w, req)
-		/*case "crear":
-			checkToken(req.Form.Get("token"), req.Form.Get("user"), w)
-			createEncryptedFile(w, req)
-		case "listar":
-			checkToken(req.Form.Get("token"), req.Form.Get("user"), w)
-			listCopias(w, req)
-		case "versiones":
-			checkToken(req.Form.Get("token"), req.Form.Get("user"), w)
-			listVersiones(w, req)
-		case "recuperar":
-			checkToken(req.Form.Get("token"), req.Form.Get("user"), w)
-			recoverEncryptedFile(w, req)*/
+	case "crear":
+		checkToken(req.Form.Get("token"), req.Form.Get("user"), w)
+		createTema(w, req)
+	/*case "listar":
+		checkToken(req.Form.Get("token"), req.Form.Get("user"), w)
+		listCopias(w, req)
+	case "versiones":
+		checkToken(req.Form.Get("token"), req.Form.Get("user"), w)
+		listVersiones(w, req)
+	case "recuperar":
+		checkToken(req.Form.Get("token"), req.Form.Get("user"), w)
+		recoverEncryptedFile(w, req)*/
+	default:
+		response(w, false, "Comando invalido")
 	}
 
 }
 
 func server() {
-	raw, err := ioutil.ReadFile("./db/db.json")
+	rawUsers, err := ioutil.ReadFile("./db/usuarios.json")
 	chk(err)
-	_ = json.Unmarshal(raw, &users)
+	rawTemas, err := ioutil.ReadFile("./db/temas.json")
+	chk(err)
+	_ = json.Unmarshal(rawUsers, &users)
+	_ = json.Unmarshal(rawTemas, &temas)
 
 	stopChan := make(chan os.Signal)
 	log.Println("Escuchando en: 127.0.0.1:10443 ... ")

@@ -162,7 +162,7 @@ func sendToServer(data url.Values) []byte {
 	chk(err)
 	response, err := ioutil.ReadAll(petition.Body)
 	chk(err)
-	//Paso más, pasamos a JSON simple, decodificamos JSON base 64
+
 	response = decode64(string(response))
 
 	return response
@@ -220,6 +220,11 @@ func (uiState *uiState) register(usuario, password string) {
 
 }
 
+// Para asociar la funcion de crear tema al html
+func (uiState *uiState) crearTema(Name, Tipo string) {
+
+}
+
 func (uiState *uiState) renderRegister() {
 	fmt.Println("entro a renderRegister")
 	uiState.loadFile("./www/registro.html")
@@ -230,6 +235,11 @@ func (uiState *uiState) renderLogin() {
 	uiState.loadFile("./www/index.html")
 	_ = uiState.ui.Bind("submitLogin", uiState.Login)
 	_ = uiState.ui.Bind("registerPage", uiState.renderRegister)
+}
+
+func (uiState *uiState) renderCrearTema() {
+	uiState.loadFile("./www/crearTema.html")
+	_ = uiState.ui.Bind("submitTema", uiState.crearTema)
 }
 
 func main() {
