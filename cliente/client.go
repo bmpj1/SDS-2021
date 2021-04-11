@@ -20,6 +20,7 @@ import (
 	"os"
 	"os/signal"
 	"runtime"
+	"time"
 
 	"github.com/zserge/lorca"
 )
@@ -85,6 +86,20 @@ func decrypt(data, key []byte) (out []byte) {
 	return
 }
 
+type respTemas struct {
+	Ok    bool            // true -> correcto, false -> error
+	Msg   string          // mensaje adicional
+	Temas map[string]tema //
+}
+type tema struct {
+	Name     string             `json:"Name"` // Nombre del tema
+	Tipo     string             `json:"Tipo"` // Tipo de tema (Publico / privado)
+	Entradas map[string]entrada // Entradas de un tema tema
+}
+type entrada struct {
+	Text string
+	Date time.Time
+}
 type uiState struct {
 	ui       lorca.UI
 	listType string
@@ -194,6 +209,26 @@ func (uiState *uiState) Login(usuario, password string) {
 
 }
 
+//
+
+func (uiState *uiState) getTemas() {
+	data := url.Values{}
+	data.Set("cmd", "listar")
+	jsonResponse := sendToServer(data)
+	var response respTemas
+	err := json.Unmarshal(jsonResponse, &response)
+	chk(err)
+	if response.Ok {
+		for key, _ := range response.Temas {
+			//fmt.Println("Key:", key)
+			uiState.ui.Eval(fmt.Sprintf(`$("#getTemas").append('<li class="mt-2">%v <button class="btn btn-primary" id="%v">Acceder</button></li>');`, key, key))
+			//uiState.ui.Eval(fmt.Sprintf((`seevswev`), key, key))
+		}
+	} else {
+		//TODO SHOW THE ERROR IN UI
+	}
+}
+
 // Para asociar la funcion de registro al html
 func (uiState *uiState) register(usuario, password string) {
 	keyClient := sha512.Sum512([]byte(password))
@@ -258,8 +293,15 @@ func (uiState *uiState) renderCrearTema() {
 func (uiState *uiState) renderMenuPage() {
 	uiState.loadFile("./www/menu.html")
 	_ = uiState.ui.Bind("crearTema", uiState.renderCrearTema)
+	_ = uiState.ui.Bind("listarTemas", uiState.renderListaTemas)
 	_ = uiState.ui.Bind("backMenuPage", uiState.renderMenuPage)
 }
+func (uiState *uiState) renderListaTemas() {
+	uiState.loadFile("./www/listarTemas.html")
+	_ = uiState.ui.Bind("start", uiState.getTemas)
+	_ = uiState.ui.Bind("backMenuPage", uiState.renderMenuPage)
+}
+
 func main() {
 	var args []string
 	if runtime.GOOS == "linux" {
