@@ -116,7 +116,6 @@ type User struct {
 }
 
 var loggedUser User
-var temas Tema
 var cipherKey []byte
 
 func client() {
