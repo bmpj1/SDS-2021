@@ -136,6 +136,7 @@ func createTema(w http.ResponseWriter, req *http.Request) {
 	t := tema{}
 	t.Name = req.Form.Get("Name") // nombre
 	t.Tipo = req.Form.Get("Tipo") // Tipo de visibilidad: publica o privada
+	t.Entradas = make(map[string]entrada)
 
 	fmt.Println("Nombre del tema: " + t.Name + " Tipo de tema: " + t.Tipo)
 
@@ -143,6 +144,22 @@ func createTema(w http.ResponseWriter, req *http.Request) {
 
 	saveTemaData()
 	response := resp{Ok: true, Msg: "Tema creado correctamente."}
+	sendToClient(w, response)
+}
+
+func crearEntrada(w http.ResponseWriter, req *http.Request) {
+	fmt.Println("estoy creando una entrada para un tema...")
+
+	e := entrada{}
+	e.Text = req.Form.Get("Text") // nombre
+	e.Date = time.Now()           // Tipo de visibilidad: publica o privada
+
+	fmt.Println("Texto de la entrada: " + e.Text + " Fecha: " + e.Date.String())
+
+	temas[req.Form.Get("Name")].Entradas[e.Date.String()] = e
+
+	saveTemaData()
+	response := resp{Ok: true, Msg: "Entrada creada correctamente."}
 	sendToClient(w, response)
 }
 
@@ -200,6 +217,9 @@ func handler(w http.ResponseWriter, req *http.Request) {
 	case "crear":
 		checkToken(req.Form.Get("token"), req.Form.Get("user"), w)
 		createTema(w, req)
+	case "crearEntrada":
+		checkToken(req.Form.Get("token"), req.Form.Get("user"), w)
+		crearEntrada(w, req)
 	/*case "listar":
 		checkToken(req.Form.Get("token"), req.Form.Get("user"), w)
 		listCopias(w, req)

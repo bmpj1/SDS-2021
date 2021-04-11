@@ -232,7 +232,6 @@ func (uiState *uiState) crearTema(Name, Tipo string) {
 	err := json.Unmarshal(jsonResponse, &response)
 	chk(err)
 	if response.Ok {
-		loggedUser.token = response.Msg
 		uiState.ui.Eval(fmt.Sprintf(`alert("Tema creado correctamente.")`))
 		uiState.renderMenuPage()
 	} else {
