@@ -9,7 +9,7 @@
 <body>
 <div class="container">
     <label for="nombreTema">Introduce el nombre del tema</label>
-    <input type="text" id="path" />
+    <input type="text" id="nombreTema" />
     <label for="privacidad">Privacidad</label>
     <select name="privacidad" id="privacidad">
         <option value="privada" selected>Privada</option>
@@ -43,7 +43,7 @@
         });
 
         botonCrear.click(async () => {
-            await crearTema($(nombreTema).val(), $('#Privacidad').val())
+            await crearTema($(nombreTema).val(), $('#privacidad').val())
         });
 
         const registre = document.getElementById("backMenu");

@@ -186,8 +186,8 @@ func (uiState *uiState) Login(usuario, password string) {
 
 	if response.Ok {
 		loggedUser.token = response.Msg
-		//uiState.renderMenuPage()
-		uiState.ui.Eval(`$("#errorMessage").text("Todo OK!")`)
+		uiState.renderMenuPage()
+		//uiState.ui.Eval(`$("#errorMessage").text("Todo OK!")`)
 	} else {
 		uiState.ui.Eval(`$("#errorMessage").text("Usuario o contraseña incorrectos")`)
 	}
@@ -222,7 +222,22 @@ func (uiState *uiState) register(usuario, password string) {
 
 // Para asociar la funcion de crear tema al html
 func (uiState *uiState) crearTema(Name, Tipo string) {
+	data := url.Values{} // estructura para contener los valores
+	data.Set("cmd", "crear")
+	data.Set("Name", Name)
+	data.Set("Tipo", Tipo)
 
+	jsonResponse := sendToServer(data)
+	var response resp
+	err := json.Unmarshal(jsonResponse, &response)
+	chk(err)
+	if response.Ok {
+		loggedUser.token = response.Msg
+		uiState.ui.Eval(fmt.Sprintf(`alert("Tema creado correctamente.")`))
+		uiState.renderMenuPage()
+	} else {
+		uiState.ui.Eval(`$("#errorMessage").text("Error en publicar un tema")`)
+	}
 }
 
 func (uiState *uiState) renderRegister() {
@@ -239,9 +254,13 @@ func (uiState *uiState) renderLogin() {
 
 func (uiState *uiState) renderCrearTema() {
 	uiState.loadFile("./www/crearTema.html")
-	_ = uiState.ui.Bind("submitTema", uiState.crearTema)
+	_ = uiState.ui.Bind("crearTema", uiState.crearTema)
 }
-
+func (uiState *uiState) renderMenuPage() {
+	uiState.loadFile("./www/menu.html")
+	_ = uiState.ui.Bind("crearTema", uiState.renderCrearTema)
+	_ = uiState.ui.Bind("backMenuPage", uiState.renderMenuPage)
+}
 func main() {
 	var args []string
 	if runtime.GOOS == "linux" {

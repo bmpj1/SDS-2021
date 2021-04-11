@@ -16,13 +16,14 @@
         <div class="container center-h center-v">
             <div class="child">
                 <div class="btn-group" role="group" aria-label="Basic example">
-                    <button id="crearTema" type="button" class="btn btn-secondary">Crear Tema</button>
+                    <button id="crear" type="button" class="btn btn-secondary">Crear Tema</button>
                   </div>
             </div>
         </div>
     </div>
 
-    <div style="border: 1px solid blue;"> Pie de la página
+    <div style="border: 1px solid blue;"> 
+      <button id="cerrar" type="button" class="btn btn-danger">Cerrar Sesión</button>
     </div>
 
     <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
@@ -33,8 +34,11 @@
             await listarTemas('temas')
         });
 
-        $('#crearTema').click(async () => {
+        $('#crear').click(async () => {
             await crearTema()
+        });
+        $('#cerrar').click(async () => {
+          await registerPage()
         });
     </script>
       <style>
