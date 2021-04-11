@@ -217,11 +217,12 @@ func (uiState *uiState) getTemas() {
 	err := json.Unmarshal(jsonResponse, &response)
 	chk(err)
 	if response.Ok {
-		for key, _ := range response.Temas {
-			//fmt.Println("Key:", key)
-			uiState.ui.Eval(fmt.Sprintf(`$("#getTemas").append('<li class="mt-2">%v <button class="btn btn-primary" id="%v">Acceder</button></li>');`, key, key))
+		for key, estructura := range response.Temas {
+			fmt.Println("Key:", key, estructura.Entradas)
+			uiState.ui.Eval(fmt.Sprintf(`$("#getTemas").append('<li class="mt-2">%v <button class="btn btn-primary" id="%v">Acceder</button></li>');`, key, estructura))
 			//uiState.ui.Eval(fmt.Sprintf((`seevswev`), key, key))
 		}
+		//uiState.renderTema()
 	} else {
 		//TODO SHOW THE ERROR IN UI
 	}
@@ -297,9 +298,9 @@ func (uiState *uiState) renderMenuPage() {
 func (uiState *uiState) renderListaTemas() {
 	uiState.loadFile("./www/listarTemas.html")
 	_ = uiState.ui.Bind("start", uiState.getTemas)
+	//	_ = uiState.ui.Bind("getVersiones", uiState.renderListarEntradas)
 	_ = uiState.ui.Bind("backMenuPage", uiState.renderMenuPage)
 }
-
 func main() {
 	var args []string
 	if runtime.GOOS == "linux" {
