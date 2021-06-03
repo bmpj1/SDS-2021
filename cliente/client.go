@@ -113,6 +113,7 @@ type resp struct {
 type User struct {
 	username string
 	token    string
+	pass     string
 }
 
 var loggedUser User
@@ -167,8 +168,8 @@ func (uiState *uiState) loadFile(filename string) {
 
 // Para mandar las peticiones al servidor
 func sendToServer(data url.Values) []byte {
-	data.Set("user", loggedUser.username) // usuario (string)
-	data.Set("token", loggedUser.token)
+	//data.Set("user", loggedUser.username) // usuario (string)
+	//data.Set("token", loggedUser.token)
 	tr := &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 	}
@@ -185,24 +186,29 @@ func sendToServer(data url.Values) []byte {
 
 // Para asociar las funciones al html del login
 func (uiState *uiState) Login(usuario, password string) {
+	// cifrar el password
 	keyClient := sha512.Sum512([]byte(password))
 	keyLogin := keyClient[:32]   // una mitad para el login (256 bits)
 	cipherKey = keyClient[32:64] // Para cifrar
 	data := url.Values{}         // estructura para contener los valores
 
+	// cifrar el username
+	userClient := sha512.Sum512([]byte(usuario))
+
 	data.Set("cmd", "login")
-	data.Set("user", usuario) // usuario (string)
+	data.Set("user", encode64(userClient[0:64])) // usuario (string)
 	data.Set("pass", encode64(keyLogin))
-	loggedUser.username = usuario
+
 	jsonResponse := sendToServer(data)
 	var response resp
 	err := json.Unmarshal(jsonResponse, &response)
 	chk(err)
 
 	if response.Ok {
+		loggedUser.username = encode64(userClient[0:64])
 		loggedUser.token = response.Msg
 		uiState.renderMenuPage()
-		//uiState.ui.Eval(`$("#errorMessage").text("Todo OK!")`)
+
 	} else {
 		uiState.ui.Eval(`$("#errorMessage").text("Usuario o contraseña incorrectos")`)
 	}
@@ -219,7 +225,7 @@ func (uiState *uiState) getTemas() {
 	if response.Ok {
 		for key, estructura := range response.Temas {
 			fmt.Println("Key:", key, estructura.Entradas)
-			uiState.ui.Eval(fmt.Sprintf(`$("#getTemas").append('<li class="mt-2">%v <button class="btn btn-primary" id="%v">Acceder</button></li>');`, key, estructura))
+			uiState.ui.Eval(fmt.Sprintf(`$("#getTemas").append('<li class="mt-2"><div class="row-12">%v  <button id="%v" >Click me</button> </div> </li>');`, key, estructura))
 			//uiState.ui.Eval(fmt.Sprintf((`seevswev`), key, key))
 		}
 		//uiState.renderTema()
@@ -230,20 +236,26 @@ func (uiState *uiState) getTemas() {
 
 // Para asociar la funcion de registro al html
 func (uiState *uiState) register(usuario, password string) {
+
+	// cifrar el password
 	keyClient := sha512.Sum512([]byte(password))
-	keyLogin := keyClient[:32]   // una mitad para el login (256 bits)
-	cipherKey = keyClient[32:64] // Para cifrar
-	data := url.Values{}         // estructura para contener los valores
+	keyRegister := keyClient[:32] // una mitad para el login (256 bits)
+	cipherKey = keyClient[32:64]  // Para cifrar
+	// cifrar el user name
+	userClient := sha512.Sum512([]byte(usuario))
+
+	data := url.Values{} // estructura para contener los valores
 
 	data.Set("cmd", "register")
-	data.Set("user", usuario) // usuario (string)
-	data.Set("pass", encode64(keyLogin))
+	data.Set("user", (encode64(userClient[0:64]))) // usuario (string)
+	data.Set("pass", encode64(keyRegister))
+	//fmt.Println(keyRegister)
 	loggedUser.username = usuario
 	jsonResponse := sendToServer(data)
 	var response resp
 	err := json.Unmarshal(jsonResponse, &response)
 	chk(err)
-	fmt.Println(usuario + password)
+	//fmt.Println(usuario + password)
 	if response.Ok {
 		loggedUser.token = response.Msg
 		uiState.ui.Eval(fmt.Sprintf(`alert("Usuario creado correctamente.")`))
@@ -257,10 +269,13 @@ func (uiState *uiState) register(usuario, password string) {
 // Para asociar la funcion de crear tema al html
 func (uiState *uiState) crearTema(Name, Tipo string) {
 	data := url.Values{} // estructura para contener los valores
-	data.Set("cmd", "crear")
+	data.Set("cmd", "crearTema")
 	data.Set("Name", Name)
 	data.Set("Tipo", Tipo)
+	data.Set("user", loggedUser.username)
+	data.Set("token", loggedUser.token)
 
+	fmt.Println(data)
 	jsonResponse := sendToServer(data)
 	var response resp
 	err := json.Unmarshal(jsonResponse, &response)
@@ -325,5 +340,4 @@ func main() {
 	}
 
 	log.Println("exiting...")
-	//client()
 }

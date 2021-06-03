@@ -29,7 +29,6 @@
 <script async>
 
     $('#getTemas').click(async (e) => {
-        console.log(e.target);
         await getTemas()
     });
 
@@ -37,6 +36,10 @@
     registre.addEventListener('click', async () => {
         await backMenuPage()
     })
+    function verTema(e){
+          //await registerPage()
+          console.log(e)
+    }
 
 </script>
 

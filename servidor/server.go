@@ -99,6 +99,7 @@ func codifyStructToJSONBase64(structure interface{}) string {
 
 func sendToClient(w http.ResponseWriter, structure interface{}) {
 	_, _ = w.Write([]byte(codifyStructToJSONBase64(structure))) // escribimos el JSON resultante
+	return
 }
 
 // Comprobar si un usuario existe en la db
@@ -114,17 +115,13 @@ func checkExist(req *http.Request) (bool, string) {
 
 // Registrar un usuario en la db
 func registerUser(w http.ResponseWriter, req *http.Request) {
-	fmt.Println("estoy en servidor registro")
-
 	res, msg := checkExist(req)
-
+	//fmt.Println("password: " + decode64(req.Form.Get("pass")))
 	u := user{}
 	u.Name = req.Form.Get("user")              // nombre
 	u.Salt = make([]byte, 16)                  // sal (16 bytes == 128 bits)
 	rand.Read(u.Salt)                          // la sal es aleatoria
 	password := decode64(req.Form.Get("pass")) // contraseña (keyLogin)
-
-	fmt.Println("user and pass: " + req.Form.Get("user"))
 
 	// "hasheamos" la contraseña con scrypt
 	u.Hash, _ = scrypt.Key(password, u.Salt, 16384, 8, 1, 32)
@@ -137,7 +134,7 @@ func registerUser(w http.ResponseWriter, req *http.Request) {
 }
 
 func createTema(w http.ResponseWriter, req *http.Request) {
-	fmt.Println("estoy creando un tema...")
+	//fmt.Println("estoy creando un tema...")
 
 	t := tema{}
 	t.Name = req.Form.Get("Name") // nombre
@@ -154,7 +151,7 @@ func createTema(w http.ResponseWriter, req *http.Request) {
 }
 
 func crearEntrada(w http.ResponseWriter, req *http.Request) {
-	fmt.Println("estoy creando una entrada para un tema...")
+	//fmt.Println("estoy creando una entrada para un tema...")
 
 	e := entrada{}
 	e.Text = req.Form.Get("Text") // nombre
@@ -188,6 +185,7 @@ func checkUser(req *http.Request) (bool, string) {
 	}
 
 	password := decode64(req.Form.Get("pass"))
+
 	// obtenemos la contraseña
 	hash, _ := scrypt.Key(password, u.Salt, 16384, 8, 1, 32) // scrypt(contraseña)
 
@@ -205,7 +203,7 @@ func listarTemas(w http.ResponseWriter, req *http.Request) {
 	_ = json.Unmarshal(rawTemas, &temas)
 
 	response := respTemas{Ok: true, Msg: "Lista de Temas obtenida", Temas: temas}
-	fmt.Println(response)
+	//fmt.Println(response)
 	sendToClient(w, response)
 }
 
@@ -216,10 +214,14 @@ func loginUser(w http.ResponseWriter, req *http.Request) {
 }
 
 // Validar el token de un usuario logueado
-func checkToken(token, username string, w http.ResponseWriter) {
-	if token != tokens[username] {
+func checkToken(token, username string, w http.ResponseWriter) bool {
+	if token == tokens[username] {
+		return true
+	} else {
 		response := resp{Ok: false, Msg: "Token no válido"}
 		sendToClient(w, response)
+		fmt.Println("token no valido")
+		return false
 	}
 }
 func handler(w http.ResponseWriter, req *http.Request) {
@@ -230,21 +232,18 @@ func handler(w http.ResponseWriter, req *http.Request) {
 		registerUser(w, req)
 	case "login":
 		loginUser(w, req)
-	case "crear":
-		checkToken(req.Form.Get("token"), req.Form.Get("user"), w)
-		createTema(w, req)
+	case "crearTema":
+		if checkToken(req.Form.Get("token"), req.Form.Get("user"), w) {
+			createTema(w, req)
+		}
 	case "crearEntrada":
-		checkToken(req.Form.Get("token"), req.Form.Get("user"), w)
-		crearEntrada(w, req)
+		if checkToken(req.Form.Get("token"), req.Form.Get("user"), w) {
+			crearEntrada(w, req)
+		}
 	case "listar":
-		checkToken(req.Form.Get("token"), req.Form.Get("user"), w)
-		listarTemas(w, req)
-	/*case "versiones":
-		checkToken(req.Form.Get("token"), req.Form.Get("user"), w)
-		listVersiones(w, req)
-	case "recuperar":
-		checkToken(req.Form.Get("token"), req.Form.Get("user"), w)
-		recoverEncryptedFile(w, req)*/
+		if checkToken(req.Form.Get("token"), req.Form.Get("user"), w) {
+			listarTemas(w, req)
+		}
 	default:
 		response(w, false, "Comando invalido")
 	}
