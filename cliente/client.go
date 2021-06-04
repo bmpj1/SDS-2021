@@ -92,9 +92,12 @@ type respTemas struct {
 	Temas map[string]tema //
 }
 type tema struct {
-	Name     string             `json:"Name"` // Nombre del tema
-	Tipo     string             `json:"Tipo"` // Tipo de tema (Publico / privado)
-	Entradas map[string]entrada // Entradas de un tema tema
+	Id        int                `json:"Id"`   // Nombre del tema
+	Usuario   string             `json:"User"` // propietario del tema
+	Name      string             `json:"Name"` // Nombre del tema
+	Tipo      string             `json:"Tipo"` // Tipo de tema (Publico / privado)
+	Entradas  map[string]entrada // Entradas de un tema tema
+	Bloqueado bool               `json:"Bloqueado"` // estado del tema
 }
 type entrada struct {
 	Text string
@@ -210,9 +213,8 @@ func (uiState *uiState) Login(usuario, password string) {
 		loggedUser.username = encode64(userClient[0:64])
 		loggedUser.token = response.Msg
 		uiState.renderMenuPage()
-
 	} else {
-		uiState.ui.Eval(`$("#errorMessage").text("Usuario o contraseña incorrectos")`)
+		uiState.ui.Eval(`alert("Usuario o contraseña incorrectos")`)
 	}
 
 }
@@ -268,14 +270,14 @@ func (uiState *uiState) getEntradas() {
 }
 
 // Para asociar la funcion de registro al html
-func (uiState *uiState) register(usuario, password string) {
+func (uiState *uiState) register(username, password string) {
 
 	// cifrar el password
 	keyClient := sha512.Sum512([]byte(password))
 	keyRegister := keyClient[:32] // una mitad para el login (256 bits)
 	cipherKey = keyClient[32:64]  // Para cifrar
 	// cifrar el user name
-	userClient := sha512.Sum512([]byte(usuario))
+	userClient := sha512.Sum512([]byte(username))
 
 	data := url.Values{} // estructura para contener los valores
 
@@ -283,7 +285,7 @@ func (uiState *uiState) register(usuario, password string) {
 	data.Set("user", (encode64(userClient[0:64]))) // usuario (string)
 	data.Set("pass", encode64(keyRegister))
 	//fmt.Println(keyRegister)
-	loggedUser.username = usuario
+	loggedUser.username = username
 	jsonResponse := sendToServer(data)
 	var response resp
 	err := json.Unmarshal(jsonResponse, &response)
@@ -294,30 +296,35 @@ func (uiState *uiState) register(usuario, password string) {
 		uiState.ui.Eval(fmt.Sprintf(`alert("Usuario creado correctamente.")`))
 		uiState.renderLogin()
 	} else {
-		uiState.ui.Eval(`$("#errorMessage").text("Error en el registro")`)
+		uiState.ui.Eval(fmt.Sprintf(`alert("Error en el registro")`))
 	}
 
 }
 
 // Para asociar la funcion de crear tema al html
 func (uiState *uiState) crearTema(Name, Tipo string) {
-	data := url.Values{} // estructura para contener los valores
-	data.Set("cmd", "crearTema")
-	data.Set("Name", Name)
-	data.Set("Tipo", Tipo)
-	data.Set("user", loggedUser.username)
-	data.Set("token", loggedUser.token)
 
-	fmt.Println(data)
-	jsonResponse := sendToServer(data)
-	var response resp
-	err := json.Unmarshal(jsonResponse, &response)
-	chk(err)
-	if response.Ok {
-		uiState.ui.Eval(fmt.Sprintf(`alert("Tema creado correctamente.")`))
-		uiState.renderMenuPage()
+	if Name == "" {
+		uiState.ui.Eval(fmt.Sprintf(`alert("El tema debera tener un nombre")`))
 	} else {
-		uiState.ui.Eval(`$("#errorMessage").text("Error en publicar un tema")`)
+		data := url.Values{} // estructura para contener los valores
+		data.Set("cmd", "crearTema")
+		data.Set("Name", Name)
+		data.Set("Tipo", Tipo)
+		data.Set("Usuario", loggedUser.username)
+		data.Set("token", loggedUser.token)
+
+		fmt.Println(data)
+		jsonResponse := sendToServer(data)
+		var response resp
+		err := json.Unmarshal(jsonResponse, &response)
+		chk(err)
+		if response.Ok {
+			uiState.ui.Eval(fmt.Sprintf(`alert("Tema creado correctamente.")`))
+			uiState.renderMenuPage()
+		} else {
+			uiState.ui.Eval(fmt.Sprintf(`alert("Error en publicar un tema")`))
+		}
 	}
 }
 
@@ -344,9 +351,9 @@ func (uiState *uiState) crearEntrada(Text string) {
 }
 
 func (uiState *uiState) renderRegister() {
-	fmt.Println("entro a renderRegister")
 	uiState.loadFile("./www/registro.html")
 	_ = uiState.ui.Bind("submitRegister", uiState.register)
+	_ = uiState.ui.Bind("loginPage", uiState.renderLogin)
 }
 
 func (uiState *uiState) renderLogin() {
@@ -368,6 +375,7 @@ func (uiState *uiState) renderMenuPage() {
 	_ = uiState.ui.Bind("crearTema", uiState.renderCrearTema)
 	_ = uiState.ui.Bind("listarTemas", uiState.renderListaTemas)
 	_ = uiState.ui.Bind("backMenuPage", uiState.renderMenuPage)
+	_ = uiState.ui.Bind("loginPage", uiState.renderLogin)
 }
 func (uiState *uiState) renderListaTemas() {
 	uiState.loadFile("./www/listarTemas.html")

@@ -31,9 +31,12 @@ type entrada struct {
 }
 
 type tema struct {
-	Name     string             `json:"Name"` // Nombre del tema
-	Tipo     string             `json:"Tipo"` // Tipo de tema (Publico / privado)
-	Entradas map[string]entrada // Entradas de un tema tema
+	Id        int                `json:"Id"`   // Nombre del tema
+	Usuario   string             `json:"User"` // propietario del tema
+	Name      string             `json:"Name"` // Nombre del tema
+	Tipo      string             `json:"Tipo"` // Tipo de tema (Publico / privado)
+	Entradas  map[string]entrada // Entradas de un tema tema
+	Bloqueado bool               `json:"Bloqueado"` // estado del tema
 }
 
 type resp struct {
@@ -140,7 +143,9 @@ func createTema(w http.ResponseWriter, req *http.Request) {
 	t.Name = req.Form.Get("Name") // nombre
 	t.Tipo = req.Form.Get("Tipo") // Tipo de visibilidad: publica o privada
 	t.Entradas = make(map[string]entrada)
-
+	t.Bloqueado = false
+	t.Usuario = req.Form.Get("Usuario")
+	t.Id = len(temas)
 	fmt.Println("Nombre del tema: " + t.Name + " Tipo de tema: " + t.Tipo)
 
 	temas[t.Name] = t
@@ -233,7 +238,7 @@ func handler(w http.ResponseWriter, req *http.Request) {
 	case "login":
 		loginUser(w, req)
 	case "crearTema":
-		if checkToken(req.Form.Get("token"), req.Form.Get("user"), w) {
+		if checkToken(req.Form.Get("token"), req.Form.Get("Usuario"), w) {
 			createTema(w, req)
 		}
 	case "crearEntrada":
@@ -259,7 +264,7 @@ func server() {
 	_ = json.Unmarshal(rawTemas, &temas)
 
 	stopChan := make(chan os.Signal)
-	log.Println("Escuchando en: 127.0.0.1:10443 ... ")
+	log.Println("Escuchando en: https://127.0.0.1:10443 ... ")
 	signal.Notify(stopChan, os.Interrupt)
 	mux := http.NewServeMux()
 	mux.Handle("/", http.HandlerFunc(handler))
