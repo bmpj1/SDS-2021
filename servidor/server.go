@@ -152,12 +152,12 @@ func createTema(w http.ResponseWriter, req *http.Request) {
 
 func crearEntrada(w http.ResponseWriter, req *http.Request) {
 	//fmt.Println("estoy creando una entrada para un tema...")
-
+	fmt.Println("\nCREANDO ENDTRADA!\n")
 	e := entrada{}
 	e.Text = req.Form.Get("Text") // nombre
 	e.Date = time.Now()           // Tipo de visibilidad: publica o privada
 
-	fmt.Println("Tema:" + req.Form.Get("Name") + "Texto de la entrada: " + e.Text + " Fecha: " + e.Date.String())
+	fmt.Println("Tema:" + req.Form.Get("Name") + "  ---- Texto de la entrada: " + e.Text + " ---- Fecha: " + e.Date.String())
 	var idEntrada = strconv.Itoa(len(temas[req.Form.Get("Name")].Entradas))
 	temas[req.Form.Get("Name")].Entradas[idEntrada] = e
 
@@ -240,7 +240,7 @@ func handler(w http.ResponseWriter, req *http.Request) {
 		if checkToken(req.Form.Get("token"), req.Form.Get("user"), w) {
 			crearEntrada(w, req)
 		}
-	case "listar":
+	case "listarTemas":
 		if checkToken(req.Form.Get("token"), req.Form.Get("user"), w) {
 			listarTemas(w, req)
 		}

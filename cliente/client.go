@@ -116,6 +116,8 @@ type User struct {
 	pass     string
 }
 
+var idTema string
+var temas respTemas
 var loggedUser User
 var cipherKey []byte
 
@@ -217,16 +219,47 @@ func (uiState *uiState) Login(usuario, password string) {
 
 func (uiState *uiState) getTemas() {
 	data := url.Values{}
-	data.Set("cmd", "listar")
+	fmt.Println("data: ", data)
+	data.Set("cmd", "listarTemas")
 	jsonResponse := sendToServer(data)
-	var response respTemas
-	err := json.Unmarshal(jsonResponse, &response)
+	err := json.Unmarshal(jsonResponse, &temas)
 	chk(err)
-	if response.Ok {
-		for key, estructura := range response.Temas {
-			fmt.Println("Key:", key, estructura.Entradas)
-			uiState.ui.Eval(fmt.Sprintf(`$("#getTemas").append('<li class="mt-2"><div class="row-12">%v  <button id="%v" >Click me</button> </div> </li>');`, key, estructura))
+	if temas.Ok {
+		uiState.ui.Eval(`$("#getTemas").empty()`) // Limpiamos la lista para asegurar que siempre está vacia antes de llenarla con datos...
+		for key, estructura := range temas.Temas {
+			fmt.Println("Key(nombre del tema):", key, " ---- Entradas del tema: ", estructura.Entradas)
+			//fmt.Println("id = " + key)
+			uiState.ui.Eval(fmt.Sprintf(`$("#getTemas").append('<button type="button" class="btn btn-secondary" id="%v" onClick="verTema(this)" >%v</button>');`, key, key))
 			//uiState.ui.Eval(fmt.Sprintf((`seevswev`), key, key))
+		}
+		//uiState.renderTema()
+	} else {
+		//TODO SHOW THE ERROR IN UI
+	}
+}
+
+func (uiState *uiState) getEntradas() {
+	fmt.Println("idTema: ", idTema)
+
+	if temas.Ok {
+		uiState.ui.Eval(`$("#getEntradas").empty()`) // Limpiamos la lista para asegurar que siempre está vacia antes de llenarla con datos...
+		var found bool = false
+		for key, estructura := range temas.Temas {
+			fmt.Println("nombre del tema", key, " ---- Entradas del tema: ", estructura.Entradas)
+			if key == idTema {
+				found = true
+				for entrada := range estructura.Entradas {
+					text := estructura.Entradas[entrada].Text
+					date := estructura.Entradas[entrada].Date
+					uiState.ui.Eval(fmt.Sprintf(`$("#getEntradas").append('<button type="button" class="btn btn-secondary" id="%v" onClick="verTema(this)" >%v</button>');`, date, text))
+				}
+			}
+			if found {
+				break
+			}
+		}
+		if !found {
+			uiState.ui.Eval(fmt.Sprintf(`$("#getEntradas").append('<div class="row" id="sinEntradas">"Sin entradas..."</div>');`))
 		}
 		//uiState.renderTema()
 	} else {
@@ -288,6 +321,28 @@ func (uiState *uiState) crearTema(Name, Tipo string) {
 	}
 }
 
+// Para asociar la funcion de crear tema al html
+func (uiState *uiState) crearEntrada(Text string) {
+	data := url.Values{} // estructura para contener los valores
+	data.Set("cmd", "crearEntrada")
+	data.Set("Name", idTema)
+	data.Set("Text", Text)
+	data.Set("user", loggedUser.username)
+	data.Set("token", loggedUser.token)
+
+	fmt.Println(data)
+	jsonResponse := sendToServer(data)
+	var response resp
+	err := json.Unmarshal(jsonResponse, &response)
+	chk(err)
+	if response.Ok {
+		uiState.ui.Eval(`alert("Entrada creada correctamente.")`)
+		uiState.renderMenuPage()
+	} else {
+		uiState.ui.Eval(`alert("Error al publicar una entrada")`)
+	}
+}
+
 func (uiState *uiState) renderRegister() {
 	fmt.Println("entro a renderRegister")
 	uiState.loadFile("./www/registro.html")
@@ -304,6 +359,10 @@ func (uiState *uiState) renderCrearTema() {
 	uiState.loadFile("./www/crearTema.html")
 	_ = uiState.ui.Bind("crearTema", uiState.crearTema)
 }
+func (uiState *uiState) renderCrearEntrada() {
+	uiState.loadFile("./www/crearEntrada.html")
+	_ = uiState.ui.Bind("crearEntrada", uiState.crearEntrada)
+}
 func (uiState *uiState) renderMenuPage() {
 	uiState.loadFile("./www/menu.html")
 	_ = uiState.ui.Bind("crearTema", uiState.renderCrearTema)
@@ -313,9 +372,18 @@ func (uiState *uiState) renderMenuPage() {
 func (uiState *uiState) renderListaTemas() {
 	uiState.loadFile("./www/listarTemas.html")
 	_ = uiState.ui.Bind("start", uiState.getTemas)
+	_ = uiState.ui.Bind("listarEntradas", uiState.renderListarEntradas)
+	_ = uiState.ui.Bind("backMenuPage", uiState.renderMenuPage)
+}
+func (uiState *uiState) renderListarEntradas(id string) {
+	uiState.loadFile("./www/listarEntradas.html")
+	idTema = id
+	_ = uiState.ui.Bind("start", uiState.getEntradas)
+	_ = uiState.ui.Bind("crearEntrada", uiState.renderCrearEntrada)
 	//	_ = uiState.ui.Bind("getVersiones", uiState.renderListarEntradas)
 	_ = uiState.ui.Bind("backMenuPage", uiState.renderMenuPage)
 }
+
 func main() {
 	var args []string
 	if runtime.GOOS == "linux" {

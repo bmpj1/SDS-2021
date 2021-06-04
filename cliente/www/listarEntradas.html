@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Lista Temas</title>
+    <title id="title">Lista Entradas</title>
     <link rel="shortcut icon" href="favicon.png">
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
 </head>
@@ -12,10 +12,13 @@
 <p>
     <div class="row">
         <div class="col-6">
-            <h1>Lista Temas</h1>
+            <h1>Lista Entradas</h1>
         </div>
         <div class="col-2"></div>
         <div class="col-4">
+            <div  id="crearEntrada" class="form-group col-6">
+                <input type="submit" value="Crear Entrada" class="btn float-right btn-primary">
+            </div>
             <div  id="backMenu" class="form-group col-6">
                 <input type="submit" value="Volver al home" class="btn float-right btn-success">
             </div>
@@ -23,7 +26,7 @@
     </div>
 </p>
 
-<div id="getTemas" class="btn-group-vertical" role="group" style="margin-left: 15px; margin-bottom: 25px;"></div>
+<div id="getEntradas" class="btn-group-vertical" role="group" style="margin-left: 15px; margin-bottom: 25px;"></div>
 
 <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
@@ -35,11 +38,15 @@
         await backMenuPage()
     })
 
+    const insertEntrada = document.getElementById("crearEntrada");
+    insertEntrada.addEventListener('click', async () => {
+        await crearEntrada()
+    })
+
     async function verTema(item){
           //await registerPage()
-          var id = $(item).attr("id")
-          alert(id)
-          await listarEntradas(id)
+          alert("Entrada creada el: " + $(item).attr("id"))
+          await start()
     }
 
 </script>
