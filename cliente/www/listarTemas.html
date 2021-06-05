@@ -10,20 +10,26 @@
 <body onload=start()>
 
 <p>
-    <div class="row">
-        <div class="col-6">
-            <h1>Lista Temas</h1>
-        </div>
-        <div class="col-2"></div>
-        <div class="col-4">
-            <div  id="backMenu" class="form-group col-6">
-                <input type="submit" value="Volver al home" class="btn float-right btn-success">
+    <div class="container">
+        <div class="row">
+            <div class="col-6">
+                <h1>Lista Temas</h1>
+            </div>
+            <div class="col-6">
+                <div class="row">
+                    <input id="alterListType" type="submit" onClick="alterListType(this)" class="btn float-right btn-success">
+                </div>
+                </br>
+                <div class="row">
+                    <input id="backMenu" type="submit" value="Volver al home" class="btn float-right btn-success">
+                </div>
             </div>
         </div>
+        
+        <div id="getTemas" class="btn-group-vertical row" role="group" style="margin-left: 15px; margin-bottom: 25px;"></div>
     </div>
 </p>
 
-<div id="getTemas" class="btn-group-vertical" role="group" style="margin-left: 15px; margin-bottom: 25px;"></div>
 
 <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
@@ -40,6 +46,19 @@
           var id = $(item).attr("id")
           alert(id)
           await listarEntradas(id)
+    }
+
+    async function alterListType(item) {
+        var id = $(item).val()
+        
+        if(id == "Ver Privados") {
+            await listarTemas("privada")
+        } else {
+            await listarTemas("publica")
+
+        }
+        
+        alert(id)
     }
 
 </script>

@@ -20,9 +20,11 @@ import (
 )
 
 type user struct {
-	Name string `json:"Name"` // nombre de usuario
-	Hash []byte `json:"Hash"` // hash de la contraseña
-	Salt []byte `json:"Salt"` // sal para la contraseña
+	Name   string `json:"Name"`   // nombre de usuario
+	Prikey string `json:"Prikey"` // sal para la contraseña
+	Pubkey string `json:"Pubkey"` // sal para la contraseña
+	Hash   []byte `json:"Hash"`   // hash de la contraseña
+	Salt   []byte `json:"Salt"`   // sal para la contraseña
 }
 
 type entrada struct {
@@ -40,8 +42,10 @@ type tema struct {
 }
 
 type resp struct {
-	Ok  bool   // true -> correcto, false -> error
-	Msg string // mensaje adicional
+	Ok     bool   // true -> correcto, false -> error
+	Msg    string // mensaje adicional
+	Pubkey string
+	Prikey string
 }
 
 type respTemas struct {
@@ -74,9 +78,12 @@ func encode64(data []byte) string {
 }
 
 // Guardamos los usuarios en la db de usuarios
-func saveData() {
+func saveData(username string) {
 	jsonString, err := json.Marshal(users)
-	chk(err)
+	if err != nil {
+		delete(users, username)
+		panic(err)
+	}
 	ioutil.WriteFile("./db/usuarios.json", jsonString, 0644)
 }
 
@@ -119,19 +126,21 @@ func checkExist(req *http.Request) (bool, string) {
 // Registrar un usuario en la db
 func registerUser(w http.ResponseWriter, req *http.Request) {
 	res, msg := checkExist(req)
-	//fmt.Println("password: " + decode64(req.Form.Get("pass")))
-	u := user{}
-	u.Name = req.Form.Get("user")              // nombre
-	u.Salt = make([]byte, 16)                  // sal (16 bytes == 128 bits)
-	rand.Read(u.Salt)                          // la sal es aleatoria
-	password := decode64(req.Form.Get("pass")) // contraseña (keyLogin)
+	if res {
+		//fmt.Println("password: " + decode64(req.Form.Get("pass")))
+		u := user{}
+		u.Name = req.Form.Get("user")              // nombre
+		u.Salt = make([]byte, 16)                  // sal (16 bytes == 128 bits)
+		rand.Read(u.Salt)                          // la sal es aleatoria
+		password := decode64(req.Form.Get("pass")) // contraseña (keyLogin)
+		// "hasheamos" la contraseña con scrypt
+		u.Hash, _ = scrypt.Key(password, u.Salt, 16384, 8, 1, 32)
+		u.Prikey = req.Form.Get("prikey")
+		u.Pubkey = req.Form.Get("pubkey")
+		users[u.Name] = u
 
-	// "hasheamos" la contraseña con scrypt
-	u.Hash, _ = scrypt.Key(password, u.Salt, 16384, 8, 1, 32)
-	//m = make(map)
-	users[u.Name] = u
-
-	saveData()
+		saveData(u.Name)
+	}
 	response := resp{Ok: res, Msg: msg}
 	sendToClient(w, response)
 }
@@ -148,7 +157,7 @@ func createTema(w http.ResponseWriter, req *http.Request) {
 	t.Id = len(temas)
 	fmt.Println("Nombre del tema: " + t.Name + " Tipo de tema: " + t.Tipo)
 
-	temas[t.Name] = t
+	temas[strconv.Itoa(t.Id)] = t
 
 	saveTemaData()
 	response := resp{Ok: true, Msg: "Tema creado correctamente."}
@@ -162,9 +171,10 @@ func crearEntrada(w http.ResponseWriter, req *http.Request) {
 	e.Text = req.Form.Get("Text") // nombre
 	e.Date = time.Now()           // Tipo de visibilidad: publica o privada
 
-	fmt.Println("Tema:" + req.Form.Get("Name") + "  ---- Texto de la entrada: " + e.Text + " ---- Fecha: " + e.Date.String())
-	var idEntrada = strconv.Itoa(len(temas[req.Form.Get("Name")].Entradas))
-	temas[req.Form.Get("Name")].Entradas[idEntrada] = e
+	fmt.Println("Tema:" + req.Form.Get("Id") + "  ---- Texto de la entrada: " + e.Text + " ---- Fecha: " + e.Date.String())
+	fmt.Println(temas)
+	var idEntrada = strconv.Itoa(len(temas[req.Form.Get("Id")].Entradas))
+	temas[req.Form.Get("Id")].Entradas[idEntrada] = e
 
 	saveTemaData()
 	response := resp{Ok: true, Msg: "Entrada creada correctamente."}
@@ -182,24 +192,26 @@ func generateToken() string {
 }
 
 // Validar el login
-func checkUser(req *http.Request) (bool, string) {
+func checkUser(req *http.Request) (bool, string, string, string) {
 	u, ok := users[req.Form.Get("user")] // obtengo todos los usuarios y mapeo el usuario en concreto segun su login
 
 	if !ok { // ¿existe ya el usuario?
-		return false, "Usuario inexistente"
+		return false, "Usuario inexistente", "", ""
 	}
 
 	password := decode64(req.Form.Get("pass"))
 
 	// obtenemos la contraseña
 	hash, _ := scrypt.Key(password, u.Salt, 16384, 8, 1, 32) // scrypt(contraseña)
+	pubkey := u.Pubkey
+	prikey := u.Prikey
 
 	if bytes.Compare(u.Hash, hash) != 0 { // comparamos
-		return false, "Credenciales inválidas"
+		return false, "Credenciales inválidas", "", ""
 	}
 	token := generateToken()
 	tokens[u.Name] = token
-	return true, token
+	return true, token, pubkey, prikey
 }
 
 func listarTemas(w http.ResponseWriter, req *http.Request) {
@@ -208,13 +220,12 @@ func listarTemas(w http.ResponseWriter, req *http.Request) {
 	_ = json.Unmarshal(rawTemas, &temas)
 
 	response := respTemas{Ok: true, Msg: "Lista de Temas obtenida", Temas: temas}
-	//fmt.Println(response)
 	sendToClient(w, response)
 }
 
 func loginUser(w http.ResponseWriter, req *http.Request) {
-	res, msg := checkUser(req)
-	response := resp{Ok: res, Msg: msg}
+	res, msg, pubkey, prikey := checkUser(req)
+	response := resp{Ok: res, Msg: msg, Pubkey: pubkey, Prikey: prikey}
 	sendToClient(w, response)
 }
 

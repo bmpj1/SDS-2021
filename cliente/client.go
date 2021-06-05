@@ -20,6 +20,7 @@ import (
 	"os"
 	"os/signal"
 	"runtime"
+	"strconv"
 	"time"
 
 	"github.com/zserge/lorca"
@@ -108,18 +109,23 @@ type uiState struct {
 	listType string
 }
 
-// respuesta del servidor
-type resp struct {
-	Ok  bool   // true -> correcto, false -> error
-	Msg string // mensaje adicional
-}
 type User struct {
 	username string
 	token    string
-	pass     string
+	pubkey   rsa.PublicKey
+	prikey   string
+}
+
+// respuesta del servidor
+type resp struct {
+	Ok     bool   // true -> correcto, false -> error
+	Msg    string // mensaje adicional
+	Pubkey string
+	Prikey string
 }
 
 var idTema string
+var tipoVisibilidad string
 var temas respTemas
 var loggedUser User
 var cipherKey []byte
@@ -189,19 +195,60 @@ func sendToServer(data url.Values) []byte {
 	return response
 }
 
+// Para asociar la funcion de registro al html
+func (uiState *uiState) register(username, password string) {
+
+	// cifrar el password
+	keyClient := sha512.Sum512([]byte(password))
+	keyRegister := keyClient[:32] // una mitad para el login (256 bits)
+	cipherKey = keyClient[32:64]  // Para cifrar
+
+	// generamos un par de claves (privada, pública) para el servidor
+	pkClient, err := rsa.GenerateKey(rand.Reader, 1024)
+	chk(err)
+	pkClient.Precompute() // aceleramos su uso con un precálculo
+
+	pkJSON, err := json.Marshal(&pkClient) // codificamos con JSON
+	chk(err)
+
+	keyPub := pkClient.Public()           // extraemos la clave pública por separado
+	pubJSON, err := json.Marshal(&keyPub) // y codificamos con JSON
+	chk(err)
+
+	data := url.Values{} // estructura para contener los valores
+	data.Set("cmd", "register")
+	data.Set("user", (encode64([]byte(username)))) // usuario (string)
+	data.Set("pass", encode64(keyRegister))
+	data.Set("pubkey", encode64(compress(pubJSON)))
+	data.Set("prikey", encode64(encrypt(compress(pkJSON), cipherKey)))
+
+	loggedUser.username = username
+	jsonResponse := sendToServer(data)
+	var response resp
+	err = json.Unmarshal(jsonResponse, &response)
+	chk(err)
+	//fmt.Println(usuario + password)
+	if response.Ok {
+		loggedUser.token = response.Msg
+		uiState.ui.Eval(fmt.Sprintf(`alert("Usuario creado correctamente.")`))
+		uiState.renderLogin()
+	} else {
+		uiState.ui.Eval(fmt.Sprintf(`alert("Error en el registro")`))
+	}
+
+}
+
 // Para asociar las funciones al html del login
 func (uiState *uiState) Login(usuario, password string) {
 	// cifrar el password
 	keyClient := sha512.Sum512([]byte(password))
 	keyLogin := keyClient[:32]   // una mitad para el login (256 bits)
 	cipherKey = keyClient[32:64] // Para cifrar
-	data := url.Values{}         // estructura para contener los valores
 
-	// cifrar el username
-	userClient := sha512.Sum512([]byte(usuario))
+	data := url.Values{} // estructura para contener los valores
 
 	data.Set("cmd", "login")
-	data.Set("user", encode64(userClient[0:64])) // usuario (string)
+	data.Set("user", (encode64([]byte(usuario)))) // usuario (string)
 	data.Set("pass", encode64(keyLogin))
 
 	jsonResponse := sendToServer(data)
@@ -210,8 +257,11 @@ func (uiState *uiState) Login(usuario, password string) {
 	chk(err)
 
 	if response.Ok {
-		loggedUser.username = encode64(userClient[0:64])
+		_ = json.Unmarshal(decompress(decode64(response.Pubkey)), &loggedUser.pubkey)
+		loggedUser.prikey = response.Prikey
+		loggedUser.username = encode64([]byte(usuario))
 		loggedUser.token = response.Msg
+
 		uiState.renderMenuPage()
 	} else {
 		uiState.ui.Eval(`alert("Usuario o contraseña incorrectos")`)
@@ -221,17 +271,24 @@ func (uiState *uiState) Login(usuario, password string) {
 
 func (uiState *uiState) getTemas() {
 	data := url.Values{}
-	fmt.Println("data: ", data)
 	data.Set("cmd", "listarTemas")
 	jsonResponse := sendToServer(data)
 	err := json.Unmarshal(jsonResponse, &temas)
 	chk(err)
+
 	if temas.Ok {
+		if tipoVisibilidad == "privada" {
+			uiState.ui.Eval(`document.getElementById("alterListType").value = "Ver Publicos"`)
+		} else {
+			uiState.ui.Eval(`document.getElementById("alterListType").value = "Ver Privados"`)
+		}
 		uiState.ui.Eval(`$("#getTemas").empty()`) // Limpiamos la lista para asegurar que siempre está vacia antes de llenarla con datos...
 		for key, estructura := range temas.Temas {
-			fmt.Println("Key(nombre del tema):", key, " ---- Entradas del tema: ", estructura.Entradas)
+			//fmt.Println("\nKey(nombre del tema):", estructura.Name, " Id: ", key, " ---- Entradas del tema: ", estructura.Entradas)
 			//fmt.Println("id = " + key)
-			uiState.ui.Eval(fmt.Sprintf(`$("#getTemas").append('<button type="button" class="btn btn-secondary" id="%v" onClick="verTema(this)" >%v</button>');`, key, key))
+			if estructura.Tipo == tipoVisibilidad {
+				uiState.ui.Eval(fmt.Sprintf(`$("#getTemas").append('<button type="button" class="btn btn-secondary" id="%v" onClick="verTema(this)" >%v</button>');`, key, estructura.Name))
+			}
 			//uiState.ui.Eval(fmt.Sprintf((`seevswev`), key, key))
 		}
 		//uiState.renderTema()
@@ -241,19 +298,22 @@ func (uiState *uiState) getTemas() {
 }
 
 func (uiState *uiState) getEntradas() {
-	fmt.Println("idTema: ", idTema)
-
 	if temas.Ok {
 		uiState.ui.Eval(`$("#getEntradas").empty()`) // Limpiamos la lista para asegurar que siempre está vacia antes de llenarla con datos...
 		var found bool = false
 		for key, estructura := range temas.Temas {
-			fmt.Println("nombre del tema", key, " ---- Entradas del tema: ", estructura.Entradas)
-			if key == idTema {
+			fmt.Println("\nnombre del tema", estructura.Name, " --- ID: ", key /*, " ---- Entradas del tema: ", estructura.Entradas*/)
+			if strconv.Itoa(estructura.Id) == idTema {
 				found = true
 				for entrada := range estructura.Entradas {
 					text := estructura.Entradas[entrada].Text
+					//fmt.Println("TU TEXTO" + estructura.Entradas[entrada].Text)
 					date := estructura.Entradas[entrada].Date
-					uiState.ui.Eval(fmt.Sprintf(`$("#getEntradas").append('<button type="button" class="btn btn-secondary" id="%v" onClick="verTema(this)" >%v</button>');`, date, text))
+					//alertMessage := string(decode64(estructura.Usuario))
+					//fmt.Println(alertMessage)
+
+					uiState.ui.Eval(fmt.Sprintf(`$("#getEntradas").append('<div class="comment mt-4 text-justify col-12"><h4>%v</h4> <span>%v</span><br><p>%v</p><hr/></div>');`, "nombreUsuario", text, date))
+
 				}
 			}
 			if found {
@@ -269,38 +329,6 @@ func (uiState *uiState) getEntradas() {
 	}
 }
 
-// Para asociar la funcion de registro al html
-func (uiState *uiState) register(username, password string) {
-
-	// cifrar el password
-	keyClient := sha512.Sum512([]byte(password))
-	keyRegister := keyClient[:32] // una mitad para el login (256 bits)
-	cipherKey = keyClient[32:64]  // Para cifrar
-	// cifrar el user name
-	userClient := sha512.Sum512([]byte(username))
-
-	data := url.Values{} // estructura para contener los valores
-
-	data.Set("cmd", "register")
-	data.Set("user", (encode64(userClient[0:64]))) // usuario (string)
-	data.Set("pass", encode64(keyRegister))
-	//fmt.Println(keyRegister)
-	loggedUser.username = username
-	jsonResponse := sendToServer(data)
-	var response resp
-	err := json.Unmarshal(jsonResponse, &response)
-	chk(err)
-	//fmt.Println(usuario + password)
-	if response.Ok {
-		loggedUser.token = response.Msg
-		uiState.ui.Eval(fmt.Sprintf(`alert("Usuario creado correctamente.")`))
-		uiState.renderLogin()
-	} else {
-		uiState.ui.Eval(fmt.Sprintf(`alert("Error en el registro")`))
-	}
-
-}
-
 // Para asociar la funcion de crear tema al html
 func (uiState *uiState) crearTema(Name, Tipo string) {
 
@@ -314,7 +342,7 @@ func (uiState *uiState) crearTema(Name, Tipo string) {
 		data.Set("Usuario", loggedUser.username)
 		data.Set("token", loggedUser.token)
 
-		fmt.Println(data)
+		//fmt.Println(data)
 		jsonResponse := sendToServer(data)
 		var response resp
 		err := json.Unmarshal(jsonResponse, &response)
@@ -332,12 +360,12 @@ func (uiState *uiState) crearTema(Name, Tipo string) {
 func (uiState *uiState) crearEntrada(Text string) {
 	data := url.Values{} // estructura para contener los valores
 	data.Set("cmd", "crearEntrada")
-	data.Set("Name", idTema)
+	data.Set("Id", idTema)
 	data.Set("Text", Text)
 	data.Set("user", loggedUser.username)
 	data.Set("token", loggedUser.token)
 
-	fmt.Println(data)
+	//fmt.Println(data)
 	jsonResponse := sendToServer(data)
 	var response resp
 	err := json.Unmarshal(jsonResponse, &response)
@@ -377,8 +405,9 @@ func (uiState *uiState) renderMenuPage() {
 	_ = uiState.ui.Bind("backMenuPage", uiState.renderMenuPage)
 	_ = uiState.ui.Bind("loginPage", uiState.renderLogin)
 }
-func (uiState *uiState) renderListaTemas() {
+func (uiState *uiState) renderListaTemas(visibilidad string) {
 	uiState.loadFile("./www/listarTemas.html")
+	tipoVisibilidad = visibilidad
 	_ = uiState.ui.Bind("start", uiState.getTemas)
 	_ = uiState.ui.Bind("listarEntradas", uiState.renderListarEntradas)
 	_ = uiState.ui.Bind("backMenuPage", uiState.renderMenuPage)

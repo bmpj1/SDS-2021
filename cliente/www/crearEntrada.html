@@ -38,7 +38,7 @@
         });
 
         botonCrear.click(async () => {
-            await crearEntrada($(textoEntrada).val())
+            await crearEntrada($(textoEntrada).val().split("\n").join("<br/>"))
         });
 
         const registre = document.getElementById("backMenu");
