@@ -11,10 +11,12 @@
     <label for="nombreTema">Introduce el nombre del tema</label>
     <input type="text" id="nombreTema"/>
     <label for="privacidad">Privacidad</label>
-    <select name="privacidad" id="privacidad">
+    <select name="privacidad" id="privacidad" onchange="change()">
         <option value="privada" selected>Privada</option>
         <option value="publica">Publica</option>
     </select>
+    <label id="labelUsuarios" for="usuarios">Introduce la id de los usuarios a compartir</label>
+    <input type="text" id="usuarios" placeholder="usu1,usu2"/>
     <div class="mt-5 row">
         <div class="col-6">
             <button class="btn btn-primary" id="crear" >Crear el tema</button>
@@ -42,13 +44,25 @@
         });
 
         botonCrear.click(async () => {
-            await crearTema($(nombreTema).val(), $('#privacidad').val())
+            await crearTema($(nombreTema).val(), $('#privacidad').val(), $('#usuarios').val())
         });
 
         const registre = document.getElementById("backMenu");
         registre.addEventListener('click', async () => {
             await backMenuPage()
         })
+
+        async function change() {
+            var tipo = document.getElementById("privacidad").value
+            if(tipo=="publica") {
+                document.getElementById("labelUsuarios").style.display = "none"
+                document.getElementById("usuarios").style.display = "none"
+            } else {
+                document.getElementById("labelUsuarios").style.display = "block"
+                document.getElementById("usuarios").style.display = "block"
+            }
+        }
+
     </script>
 </div>
 

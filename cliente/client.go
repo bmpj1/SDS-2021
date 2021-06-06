@@ -333,9 +333,33 @@ func (uiState *uiState) getEntradas() {
 	}
 }
 
-// Para asociar la funcion de crear tema al html
-func (uiState *uiState) crearTema(Name, Tipo string) {
+func getUsersPubKey(usuarios string) string {
+	data := url.Values{}
 
+	data.Set("cmd", "getUsersPubKey")
+	data.Set("Usuario", loggedUser.username)
+	data.Set("token", loggedUser.token)
+	data.Set("Usuarios", string(decode64(loggedUser.username))+","+usuarios)
+
+	jsonResponse := sendToServer(data)
+	var response resp
+	err := json.Unmarshal(jsonResponse, &response)
+	chk(err)
+	/*if response.Ok {
+		split := strings.Split(response.Pubkey, " ")
+		for key := range split {
+			if split[key] != "" {
+				fmt.Println("Recivido: ", split[key], "\n")
+			}
+		}
+	} else {
+		fmt.Println("mal")
+	}*/
+	return response.Pubkey
+}
+
+// Para asociar la funcion de crear tema al html
+func (uiState *uiState) crearTema(Name, Tipo, usuarios string) {
 	if Name == "" {
 		uiState.ui.Eval(fmt.Sprintf(`alert("El tema debera tener un nombre")`))
 	} else {
@@ -347,24 +371,29 @@ func (uiState *uiState) crearTema(Name, Tipo string) {
 		chk(err)
 		keyTema := hash.Sum(nil)
 
-		data := url.Values{} // estructura para contener los valores
-		data.Set("cmd", "crearTema")
-		data.Set("KeyTema", encode64(keyTema))
-		data.Set("Name", encode64(encrypt([]byte(Name), keyTema)))
-		data.Set("Tipo", encode64(encrypt([]byte(Tipo), keyTema)))
-		data.Set("Usuario", loggedUser.username)
-		data.Set("token", loggedUser.token)
+		//pubkeys := getUsersPubKey(usuarios)
 
-		//fmt.Println(data)
-		jsonResponse := sendToServer(data)
-		var response resp
-		err = json.Unmarshal(jsonResponse, &response)
-		chk(err)
-		if response.Ok {
-			uiState.ui.Eval(fmt.Sprintf(`alert("Tema creado correctamente.")`))
-			uiState.renderMenuPage()
-		} else {
-			uiState.ui.Eval(fmt.Sprintf(`alert("Error en publicar un tema")`))
+		if Tipo == "publico" {
+			data := url.Values{} // estructura para contener los valores
+			data.Set("cmd", "crearTema")
+			data.Set("KeyTema", encode64(keyTema))
+			data.Set("Name", encode64(encrypt([]byte(Name), keyTema)))
+			data.Set("Tipo", encode64(encrypt([]byte(Tipo), keyTema)))
+			data.Set("Usuario", loggedUser.username)
+			data.Set("token", loggedUser.token)
+
+			//fmt.Println(data)
+			jsonResponse := sendToServer(data)
+			var response resp
+			err = json.Unmarshal(jsonResponse, &response)
+			chk(err)
+			if response.Ok {
+				uiState.ui.Eval(fmt.Sprintf(`alert("Tema creado correctamente.")`))
+				uiState.renderMenuPage()
+			} else {
+				uiState.ui.Eval(fmt.Sprintf(`alert("Error en publicar un tema")`))
+			}
+
 		}
 	}
 }

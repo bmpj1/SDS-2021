@@ -13,6 +13,7 @@ import (
 	"os"
 	"os/signal"
 	"strconv"
+	"strings"
 	"text/template"
 	"time"
 
@@ -172,13 +173,12 @@ func createTema(w http.ResponseWriter, req *http.Request) {
 
 func crearEntrada(w http.ResponseWriter, req *http.Request) {
 	//fmt.Println("estoy creando una entrada para un tema...")
-	fmt.Println("\nCREANDO ENDTRADA!\n")
 	e := entrada{}
 	e.Text = req.Form.Get("Text") // nombre
 	e.Date = time.Now()           // Tipo de visibilidad: publica o privada
 
-	fmt.Println("Tema:" + req.Form.Get("Id") + "  ---- Texto de la entrada: " + e.Text + " ---- Fecha: " + e.Date.String())
-	fmt.Println(temas)
+	//fmt.Println("Tema:" + req.Form.Get("Id") + "  ---- Texto de la entrada: " + e.Text + " ---- Fecha: " + e.Date.String())
+	//fmt.Println(temas)
 	var idEntrada = strconv.Itoa(len(temas[req.Form.Get("Id")].Entradas))
 	temas[req.Form.Get("Id")].Entradas[idEntrada] = e
 
@@ -220,6 +220,21 @@ func checkUser(req *http.Request) (bool, string, string, string) {
 	return true, token, pubkey, prikey
 }
 
+func getUsersPubKey(w http.ResponseWriter, req *http.Request) {
+	split := strings.Split(req.Form.Get("Usuarios"), ",")
+	var pkeys string
+	for u := range split {
+		fmt.Println("splited: ", split[u])
+		name := encode64([]byte(split[u]))
+		if users[name].Name != "" {
+			pkeys += users[name].Pubkey + " "
+		}
+	}
+
+	response := resp{Ok: true, Msg: "Claves obtenidas", Pubkey: pkeys}
+	sendToClient(w, response)
+}
+
 func listarTemas(w http.ResponseWriter, req *http.Request) {
 	rawTemas, err := ioutil.ReadFile("./db/temas.json")
 	chk(err)
@@ -254,6 +269,10 @@ func handler(w http.ResponseWriter, req *http.Request) {
 		registerUser(w, req)
 	case "login":
 		loginUser(w, req)
+	case "getUsersPubKey":
+		if checkToken(req.Form.Get("token"), req.Form.Get("Usuario"), w) {
+			getUsersPubKey(w, req)
+		}
 	case "crearTema":
 		if checkToken(req.Form.Get("token"), req.Form.Get("Usuario"), w) {
 			createTema(w, req)
