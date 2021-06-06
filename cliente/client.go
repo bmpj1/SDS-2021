@@ -7,6 +7,7 @@ import (
 	"crypto/cipher"
 	"crypto/rand"
 	"crypto/rsa"
+	"crypto/sha256"
 	"crypto/sha512"
 	"crypto/tls"
 	"encoding/base64"
@@ -93,10 +94,11 @@ type respTemas struct {
 	Temas map[string]tema //
 }
 type tema struct {
-	Id        int                `json:"Id"`   // Nombre del tema
-	Usuario   string             `json:"User"` // propietario del tema
-	Name      string             `json:"Name"` // Nombre del tema
-	Tipo      string             `json:"Tipo"` // Tipo de tema (Publico / privado)
+	KeyTema   string             `json:"KeyTema"` // clave para cifrar tema
+	Id        int                `json:"Id"`      // Nombre del tema
+	Usuario   string             `json:"User"`    // propietario del tema
+	Name      string             `json:"Name"`    // Nombre del tema
+	Tipo      string             `json:"Tipo"`    // Tipo de tema (Publico / privado)
 	Entradas  map[string]entrada // Entradas de un tema tema
 	Bloqueado bool               `json:"Bloqueado"` // estado del tema
 }
@@ -284,10 +286,12 @@ func (uiState *uiState) getTemas() {
 		}
 		uiState.ui.Eval(`$("#getTemas").empty()`) // Limpiamos la lista para asegurar que siempre está vacia antes de llenarla con datos...
 		for key, estructura := range temas.Temas {
-			//fmt.Println("\nKey(nombre del tema):", estructura.Name, " Id: ", key, " ---- Entradas del tema: ", estructura.Entradas)
+			//fmt.Println("\nKey(nombre del tema):", string(decrypt(decode64(estructura.Name), decode64(estructura.KeyTema))), " Id: ", key, " ---- Entradas del tema: ", estructura.Entradas)
 			//fmt.Println("id = " + key)
-			if estructura.Tipo == tipoVisibilidad {
-				uiState.ui.Eval(fmt.Sprintf(`$("#getTemas").append('<button type="button" class="btn btn-secondary" id="%v" onClick="verTema(this)" >%v</button>');`, key, estructura.Name))
+			nombre := string(decrypt(decode64(estructura.Name), decode64(estructura.KeyTema)))
+			tipo := string(decrypt(decode64(estructura.Tipo), decode64(estructura.KeyTema)))
+			if tipo == tipoVisibilidad {
+				uiState.ui.Eval(fmt.Sprintf(`$("#getTemas").append('<button type="button" class="btn btn-secondary" id="%v" onClick="verTema(this)" >%v</button>');`, key, nombre))
 			}
 			//uiState.ui.Eval(fmt.Sprintf((`seevswev`), key, key))
 		}
@@ -335,17 +339,26 @@ func (uiState *uiState) crearTema(Name, Tipo string) {
 	if Name == "" {
 		uiState.ui.Eval(fmt.Sprintf(`alert("El tema debera tener un nombre")`))
 	} else {
+		aux := make([]byte, 32)
+		rand.Read(aux)
+		hash := sha256.New()
+		hash.Reset()
+		_, err := hash.Write(aux)
+		chk(err)
+		keyTema := hash.Sum(nil)
+
 		data := url.Values{} // estructura para contener los valores
 		data.Set("cmd", "crearTema")
-		data.Set("Name", Name)
-		data.Set("Tipo", Tipo)
+		data.Set("KeyTema", encode64(keyTema))
+		data.Set("Name", encode64(encrypt([]byte(Name), keyTema)))
+		data.Set("Tipo", encode64(encrypt([]byte(Tipo), keyTema)))
 		data.Set("Usuario", loggedUser.username)
 		data.Set("token", loggedUser.token)
 
 		//fmt.Println(data)
 		jsonResponse := sendToServer(data)
 		var response resp
-		err := json.Unmarshal(jsonResponse, &response)
+		err = json.Unmarshal(jsonResponse, &response)
 		chk(err)
 		if response.Ok {
 			uiState.ui.Eval(fmt.Sprintf(`alert("Tema creado correctamente.")`))

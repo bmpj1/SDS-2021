@@ -19,6 +19,8 @@ import (
 	"golang.org/x/crypto/scrypt"
 )
 
+var kcifradodb string = "serverKey"
+
 type user struct {
 	Name   string `json:"Name"`   // nombre de usuario
 	Prikey string `json:"Prikey"` // sal para la contraseña
@@ -33,10 +35,11 @@ type entrada struct {
 }
 
 type tema struct {
-	Id        int                `json:"Id"`   // Nombre del tema
-	Usuario   string             `json:"User"` // propietario del tema
-	Name      string             `json:"Name"` // Nombre del tema
-	Tipo      string             `json:"Tipo"` // Tipo de tema (Publico / privado)
+	KeyTema   string             `json:"KeyTema"` // clave para cifrar tema
+	Id        int                `json:"Id"`      // Nombre del tema
+	Usuario   string             `json:"User"`    // propietario del tema
+	Name      string             `json:"Name"`    // Nombre del tema
+	Tipo      string             `json:"Tipo"`    // Tipo de tema (Publico / privado)
 	Entradas  map[string]entrada // Entradas de un tema tema
 	Bloqueado bool               `json:"Bloqueado"` // estado del tema
 }
@@ -147,10 +150,13 @@ func registerUser(w http.ResponseWriter, req *http.Request) {
 
 func createTema(w http.ResponseWriter, req *http.Request) {
 	//fmt.Println("estoy creando un tema...")
+	fmt.Println(req.Form.Get("tema"))
 
 	t := tema{}
 	t.Name = req.Form.Get("Name") // nombre
 	t.Tipo = req.Form.Get("Tipo") // Tipo de visibilidad: publica o privada
+	t.KeyTema = req.Form.Get("KeyTema")
+
 	t.Entradas = make(map[string]entrada)
 	t.Bloqueado = false
 	t.Usuario = req.Form.Get("Usuario")
