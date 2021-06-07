@@ -21,7 +21,6 @@ import (
 	"os"
 	"os/signal"
 	"runtime"
-	"strconv"
 	"strings"
 	"time"
 
@@ -104,8 +103,9 @@ type tema struct {
 	Bloqueado bool               `json:"Bloqueado"` // estado del tema
 }
 type entrada struct {
-	Text string
-	Date time.Time
+	Username string
+	Text     string
+	Date     time.Time
 }
 type uiState struct {
 	ui       lorca.UI
@@ -207,7 +207,7 @@ func (uiState *uiState) register(username, password string) {
 	cipherKey = keyClient[32:64]  // Para cifrar
 
 	// generamos un par de claves (privada, pública) para el servidor
-	pkClient, err := rsa.GenerateKey(rand.Reader, 1024)
+	pkClient, err := rsa.GenerateKey(rand.Reader, 2048)
 	chk(err)
 	pkClient.Precompute() // aceleramos su uso con un precálculo
 
@@ -238,7 +238,6 @@ func (uiState *uiState) register(username, password string) {
 	} else {
 		uiState.ui.Eval(fmt.Sprintf(`alert("Error en el registro")`))
 	}
-
 }
 
 // Para asociar las funciones al html del login
@@ -271,7 +270,25 @@ func (uiState *uiState) Login(usuario, password string) {
 	} else {
 		uiState.ui.Eval(`alert("Usuario o contraseña incorrectos")`)
 	}
+}
 
+func RSA_OAEP_Encrypt(secretMessage string, key rsa.PublicKey) string {
+	label := []byte("OAEP Encrypted")
+	rng := rand.Reader
+	ciphertext, err := rsa.EncryptOAEP(sha256.New(), rng, &key, []byte(secretMessage), label)
+	chk(err)
+	return base64.StdEncoding.EncodeToString(ciphertext)
+}
+
+func RSA_OAEP_Decrypt(cipherText string, privKey rsa.PrivateKey) string {
+	ct, _ := base64.StdEncoding.DecodeString(cipherText)
+	label := []byte("OAEP Encrypted")
+	rng := rand.Reader
+	plaintext, err := rsa.DecryptOAEP(sha256.New(), rng, &privKey, ct, label)
+	if err != nil {
+		return string("")
+	}
+	return string(plaintext)
 }
 
 func (uiState *uiState) getTemas() {
@@ -301,69 +318,68 @@ func (uiState *uiState) getTemas() {
 					uiState.ui.Eval(fmt.Sprintf(`$("#getTemas").append('<button type="button" class="btn btn-secondary" id="%v" onClick="verTema(this)" >%v</button>');`, key, nombre))
 				}
 			} else if len(estructura.KeyTema) != 44 && tipoVisibilidad == "privada" { // privada
-
-				// data.Set("KeyTema", encode64([]byte(keyTemaCifradas)))
-				// data.Set("Name", encode64(encrypt([]byte(Name), []byte(keyTema))))
 				split := strings.Split(estructura.KeyTema, " ")
 				for key := range split {
-					if split[key] != "" {
+					if split[key] != "" { // split[key] almacena la key del tema encriptada con la clave publica del usuario
+						temaKey := RSA_OAEP_Decrypt(split[key], loggedUser.prikey)
+						if temaKey != "" {
+							nombre = string(decrypt(decode64(estructura.Name), []byte(temaKey)))
+							tipo = string(decrypt(decode64(estructura.Tipo), []byte(temaKey)))
 
-						// fmt.Println("ASD: ", loggedUser.prikey)
+							if tipo == tipoVisibilidad {
+								uiState.ui.Eval(fmt.Sprintf(`$("#getTemas").append('<button type="button" class="btn btn-secondary" id="%v" onClick="verTema(this)" >%v</button>');`, estructura.Id, nombre))
+							}
+						}
 
-						// decryptedBytes, err := loggedUser.prikey.Decrypt(nil, []byte(split[key]), &rsa.OAEPOptions{Hash: crypto.SHA256})
-						// if err != nil {
-						// 	panic(err)
-						// }
-						// fmt.Println("KEYS: ", string(decryptedBytes))
-
-						//fmt.Println("KEYS: ", decompress(decode64(split[key])))
 					}
 				}
-
-				//fmt.Println("MY KEY: ", loggedUser.pubkey)
-
-				/*tieneMiPulicKey := strings.Contains(decode64(estructura.KeyTema), loggedUser.pubkey)
-
-				nombre = string(decrypt(decode64(estructura.Name), decode64(estructura.KeyTema)))
-				tipo = string(decrypt(decode64(estructura.Tipo), decode64(estructura.KeyTema)))*/
 			}
-			//uiState.ui.Eval(fmt.Sprintf((`seevswev`), key, key))
 		}
-		//uiState.renderTema()
 	} else {
 		//TODO SHOW THE ERROR IN UI
 	}
 }
 
 func (uiState *uiState) getEntradas() {
+	var tipo string
 	if temas.Ok {
 		uiState.ui.Eval(`$("#getEntradas").empty()`) // Limpiamos la lista para asegurar que siempre está vacia antes de llenarla con datos...
-		var found bool = false
-		for key, estructura := range temas.Temas {
-			fmt.Println("\nnombre del tema", estructura.Name, " --- ID: ", key /*, " ---- Entradas del tema: ", estructura.Entradas*/)
-			if strconv.Itoa(estructura.Id) == idTema {
-				found = true
-				for entrada := range estructura.Entradas {
-					text := estructura.Entradas[entrada].Text
+		if tipoVisibilidad == "publica" {            // publica
+			tipo = string(decrypt(decode64(temas.Temas[idTema].Tipo), decode64(temas.Temas[idTema].KeyTema)))
+			if tipo == tipoVisibilidad {
+				//fmt.Println("GET PUB TIPO: ", tipo)
+				for entrada := range temas.Temas[idTema].Entradas {
+					text := string(decode64(temas.Temas[idTema].Entradas[entrada].Text))
+					username := string(decode64(temas.Temas[idTema].Entradas[entrada].Username))
 					//fmt.Println("TU TEXTO" + estructura.Entradas[entrada].Text)
-					date := estructura.Entradas[entrada].Date
+					date := temas.Temas[idTema].Entradas[entrada].Date
 					//alertMessage := string(decode64(estructura.Usuario))
 					//fmt.Println(alertMessage)
 
-					uiState.ui.Eval(fmt.Sprintf(`$("#getEntradas").append('<div class="comment mt-4 text-justify col-12"><h4>%v</h4> <span>%v</span><br><p>%v</p><hr/></div>');`, "nombreUsuario", text, date))
-
+					uiState.ui.Eval(fmt.Sprintf(`$("#getEntradas").append('<div class="comment mt-4 text-justify col-12"><h4>Usuario: %v</h4><span>Texto: %v</span><br><p>Fecha: %v</p><hr/></div>');`, username, text, date))
 				}
 			}
-			if found {
-				break
+		} else if tipoVisibilidad == "privada" { // privada
+			split := strings.Split(temas.Temas[idTema].KeyTema, " ")
+			for key := range split {
+				if split[key] != "" {
+					temaKey := RSA_OAEP_Decrypt(split[key], loggedUser.prikey)
+					if temaKey != "" {
+						tipo = string(decrypt(decode64(temas.Temas[idTema].Tipo), []byte(temaKey)))
+						//fmt.Println("GET PRI TIPO: ", tipo)
+						if tipo == tipoVisibilidad {
+							for entrada := range temas.Temas[idTema].Entradas {
+								text := string(decrypt(decode64(temas.Temas[idTema].Entradas[entrada].Text), []byte(temaKey)))
+								username := string(decode64(temas.Temas[idTema].Entradas[entrada].Username))
+								//fmt.Println("TU TEXTO" + estructura.Entradas[entrada].Text)
+								date := temas.Temas[idTema].Entradas[entrada].Date
+								uiState.ui.Eval(fmt.Sprintf(`$("#getEntradas").append('<div class="comment mt-4 text-justify col-12"><h4>Usuario: %v</h4><span>Texto: %v</span><br><p>Fecha: %v</p><hr/></div>');`, username, text, date))
+							}
+						}
+					}
+				}
 			}
 		}
-		if !found {
-			uiState.ui.Eval(fmt.Sprintf(`$("#getEntradas").append('<div class="row" id="sinEntradas">"Sin entradas..."</div>');`))
-		}
-		//uiState.renderTema()
-	} else {
-		//TODO SHOW THE ERROR IN UI
 	}
 }
 
@@ -408,7 +424,7 @@ func (uiState *uiState) crearTema(Name, Tipo, usuarios string) {
 		pubkeys := getUsersPubKey(usuarios)
 
 		if Tipo == "publica" {
-			data := url.Values{} // estructura para contener los valores
+			data := url.Values{}
 			data.Set("cmd", "crearTema")
 			data.Set("KeyTema", encode64([]byte(keyTema)))
 			data.Set("Name", encode64(encrypt([]byte(Name), []byte(keyTema))))
@@ -425,8 +441,7 @@ func (uiState *uiState) crearTema(Name, Tipo, usuarios string) {
 			} else {
 				uiState.ui.Eval(fmt.Sprintf(`alert("Error en publicar un tema")`))
 			}
-		} else {
-			// cifrar el tema tantas veces como usuarios tenga para compartir
+		} else { //privada
 			split := strings.Split(pubkeys, " ")
 			var keyTemaCifradas string
 			for key := range split {
@@ -434,18 +449,11 @@ func (uiState *uiState) crearTema(Name, Tipo, usuarios string) {
 					var keyPub rsa.PublicKey
 					_ = json.Unmarshal(decompress(decode64(split[key])), &keyPub)
 
-					fmt.Println("Recivido: ", split[key], "\n")
-					fmt.Println("Recivido2: ", decompress(decode64(split[key])), "\n")
-					fmt.Println("Recivido3: ", keyPub, "\n")
-
-					encryptedBytes, err := rsa.EncryptOAEP(
-						sha256.New(),
-						rand.Reader,
-						&keyPub,
-						[]byte(string(keyTema)),
-						nil)
-					chk(err)
-					keyTemaCifradas += encode64(compress(encryptedBytes)) + " "
+					//fmt.Println("Recivido: ", split[key], "\n")
+					//fmt.Println("Recivido2: ", decompress(decode64(split[key])), "\n")
+					//fmt.Println("Recivido3: ", keyPub, "\n")
+					keyTemaCifradas += RSA_OAEP_Encrypt(string(keyTema), keyPub) + " "
+					//fmt.Println("KEYCIFRADA: ", keyTemaCifradas)
 				}
 			}
 			data := url.Values{}
@@ -471,23 +479,69 @@ func (uiState *uiState) crearTema(Name, Tipo, usuarios string) {
 
 // Para asociar la funcion de crear tema al html
 func (uiState *uiState) crearEntrada(Text string) {
-	data := url.Values{} // estructura para contener los valores
-	data.Set("cmd", "crearEntrada")
-	data.Set("Id", idTema)
-	data.Set("Text", Text)
-	data.Set("user", loggedUser.username)
-	data.Set("token", loggedUser.token)
+	var tipo string
+	if temas.Ok {
+		fmt.Println("TIPO VISIBILIDAD CREAR ENTRADA: ", tipoVisibilidad)
 
-	//fmt.Println(data)
-	jsonResponse := sendToServer(data)
-	var response resp
-	err := json.Unmarshal(jsonResponse, &response)
-	chk(err)
-	if response.Ok {
-		uiState.ui.Eval(`alert("Entrada creada correctamente.")`)
-		uiState.renderMenuPage()
-	} else {
-		uiState.ui.Eval(`alert("Error al publicar una entrada")`)
+		if tipoVisibilidad == "publica" { // publica
+			tipo = string(decrypt(decode64(temas.Temas[idTema].Tipo), decode64(temas.Temas[idTema].KeyTema)))
+			if tipo == tipoVisibilidad {
+				fmt.Println("TIPO: ", tipo, " KEY: ", temas.Temas[idTema].KeyTema)
+				data := url.Values{} // estructura para contener los valores
+				data.Set("cmd", "crearEntrada")
+				data.Set("Id", idTema)
+				data.Set("Text", encode64([]byte(Text)))
+				data.Set("user", loggedUser.username)
+				data.Set("token", loggedUser.token)
+
+				//fmt.Println(data)
+				jsonResponse := sendToServer(data)
+				var response resp
+				err := json.Unmarshal(jsonResponse, &response)
+				chk(err)
+				if response.Ok {
+					uiState.ui.Eval(`alert("Entrada creada correctamente.")`)
+					uiState.renderMenuPage()
+				} else {
+					uiState.ui.Eval(`alert("Error al publicar una entrada")`)
+				}
+			}
+		} else if tipoVisibilidad == "privada" { // privada
+
+			split := strings.Split(temas.Temas[idTema].KeyTema, " ")
+			for key := range split {
+				if split[key] != "" {
+					temaKey := RSA_OAEP_Decrypt(split[key], loggedUser.prikey)
+					//fmt.Println("CREATE PRI KEY: ", temaKey)
+					if temaKey != "" {
+						//fmt.Println("ASDASDASDQWDSAD")
+						tipo = string(decrypt(decode64(temas.Temas[idTema].Tipo), []byte(temaKey)))
+						fmt.Println("temakey: ", temaKey)
+						if tipo == tipoVisibilidad {
+							data := url.Values{} // estructura para contener los valores
+							data.Set("cmd", "crearEntrada")
+							data.Set("Id", idTema)
+							data.Set("Text", encode64(encrypt([]byte(Text), []byte(temaKey))))
+							data.Set("user", loggedUser.username)
+							data.Set("token", loggedUser.token)
+
+							//fmt.Println(data)
+							jsonResponse := sendToServer(data)
+							var response resp
+							err := json.Unmarshal(jsonResponse, &response)
+							chk(err)
+							if response.Ok {
+								uiState.ui.Eval(`alert("Entrada creada correctamente.")`)
+								uiState.renderMenuPage()
+							} else {
+								uiState.ui.Eval(`alert("Error al publicar una entrada")`)
+							}
+						}
+					}
+
+				}
+			}
+		}
 	}
 }
 

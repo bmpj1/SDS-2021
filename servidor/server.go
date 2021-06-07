@@ -18,7 +18,6 @@ import (
 	"os/signal"
 	"strconv"
 	"strings"
-	"text/template"
 	"time"
 
 	"golang.org/x/crypto/scrypt"
@@ -33,8 +32,9 @@ type user struct {
 }
 
 type entrada struct {
-	Text string
-	Date time.Time
+	Username string
+	Text     string
+	Date     time.Time
 }
 
 type tema struct {
@@ -124,7 +124,7 @@ func cifrarDB(fileNameIn, fileNameOut string) {
 	_, err = io.Copy(w, r)
 	chk(err)
 	w.Close()
-
+	fmt.Println("DB cifrada.")
 }
 
 func descifrarDB(fileNameIn, fileNameOut string) {
@@ -178,24 +178,7 @@ func descifrarDB(fileNameIn, fileNameOut string) {
 func borrarDB(fileNameIn string) {
 	err := os.Remove(fileNameIn)
 	chk(err)
-}
-
-// Guardamos los usuarios en la db de usuarios
-func saveData(username string) {
-	jsonString, err := json.Marshal(users)
-	if err != nil {
-		delete(users, username)
-		panic(err)
-	}
-	ioutil.WriteFile("./db/usuarios.json", jsonString, 0644)
-}
-
-// Guardamos los temas en la db de temas
-func saveTemaData() {
-	jsonString, err := json.Marshal(temas)
-	chk(err)
-	ioutil.WriteFile("./db/temas.json", jsonString, 0644)
-	cifrarDB("./db/temas.json", "./db/temas.json.enc")
+	fmt.Println(".json eliminado")
 }
 
 /**
@@ -229,6 +212,12 @@ func checkExist(req *http.Request) (bool, string) {
 
 // Registrar un usuario en la db
 func registerUser(w http.ResponseWriter, req *http.Request) {
+	descifrarDB("./db/usuarios.json.enc", "./db/usuarios.json")
+	rawUsuarios, err := ioutil.ReadFile("./db/usuarios.json")
+
+	chk(err)
+	_ = json.Unmarshal(rawUsuarios, &users)
+
 	res, msg := checkExist(req)
 	if res {
 		//fmt.Println("password: " + decode64(req.Form.Get("pass")))
@@ -243,43 +232,58 @@ func registerUser(w http.ResponseWriter, req *http.Request) {
 		u.Pubkey = req.Form.Get("pubkey")
 		users[u.Name] = u
 
-		saveData(u.Name)
+		jsonString, err := json.Marshal(users)
+		chk(err)
+
+		err = ioutil.WriteFile("./db/usuarios.json", jsonString, 0644)
+		chk(err)
+		cifrarDB("./db/usuarios.json", "./db/usuarios.json.enc")
 	}
 	response := resp{Ok: res, Msg: msg}
 	sendToClient(w, response)
+	// borrarDB("./db/usuarios.json") // da error: "El proceso no tiene acceso al archivo porque está siendo utilizado por otro proceso."
 }
 
 func createTema(w http.ResponseWriter, req *http.Request) {
-	//fmt.Println("estoy creando un tema...")
+	descifrarDB("./db/temas.json.enc", "./db/temas.json")
+	rawTemas, err := ioutil.ReadFile("./db/temas.json")
+
+	chk(err)
+	_ = json.Unmarshal(rawTemas, &temas)
+
 	fmt.Println(req.Form.Get("tema"))
 
 	t := tema{}
 	t.Name = req.Form.Get("Name") // nombre
 	t.Tipo = req.Form.Get("Tipo") // Tipo de visibilidad: publica o privada
 
-	// if t.Tipo == "9oU89FrtXChu/3XAHrs2W0qa+VEdJJE=" { //publica (no va del todo bien...)
-
-	// } else { //privado
-
-	// }
-
 	t.KeyTema = req.Form.Get("KeyTema")
 	t.Entradas = make(map[string]entrada)
 	t.Bloqueado = false
 	t.Usuario = req.Form.Get("Usuario")
 	t.Id = len(temas)
-	fmt.Println("Nombre del tema: " + t.Name + " Tipo de tema: " + t.KeyTema)
 
 	temas[strconv.Itoa(t.Id)] = t
+	jsonString, err := json.Marshal(temas)
+	chk(err)
 
-	saveTemaData()
+	err = ioutil.WriteFile("./db/temas.json", jsonString, 0644)
+	chk(err)
+	cifrarDB("./db/temas.json", "./db/temas.json.enc")
 	response := resp{Ok: true, Msg: "Tema creado correctamente."}
 	sendToClient(w, response)
+	//borrarDB("./db/temas.json") // da error: "El proceso no tiene acceso al archivo porque está siendo utilizado por otro proceso."
 }
 
 func crearEntrada(w http.ResponseWriter, req *http.Request) {
-	//fmt.Println("estoy creando una entrada para un tema...")
+	descifrarDB("./db/temas.json.enc", "./db/temas.json")
+	rawTemas, err := ioutil.ReadFile("./db/temas.json")
+
+	chk(err)
+	_ = json.Unmarshal(rawTemas, &temas)
+
 	e := entrada{}
+	e.Username = req.Form.Get("user")
 	e.Text = req.Form.Get("Text") // nombre
 	e.Date = time.Now()           // Tipo de visibilidad: publica o privada
 
@@ -287,10 +291,15 @@ func crearEntrada(w http.ResponseWriter, req *http.Request) {
 	//fmt.Println(temas)
 	var idEntrada = strconv.Itoa(len(temas[req.Form.Get("Id")].Entradas))
 	temas[req.Form.Get("Id")].Entradas[idEntrada] = e
+	jsonString, err := json.Marshal(temas)
+	chk(err)
 
-	saveTemaData()
+	err = ioutil.WriteFile("./db/temas.json", jsonString, 0644)
+	chk(err)
+	cifrarDB("./db/temas.json", "./db/temas.json.enc")
 	response := resp{Ok: true, Msg: "Entrada creada correctamente."}
 	sendToClient(w, response)
+	//borrarDB("./db/temas.json")	// da error: "El proceso no tiene acceso al archivo porque está siendo utilizado por otro proceso."
 }
 
 func generateToken() string {
@@ -305,6 +314,7 @@ func generateToken() string {
 
 // Validar el login
 func checkUser(req *http.Request) (bool, string, string, string) {
+
 	u, ok := users[req.Form.Get("user")] // obtengo todos los usuarios y mapeo el usuario en concreto segun su login
 
 	if !ok { // ¿existe ya el usuario?
@@ -327,6 +337,12 @@ func checkUser(req *http.Request) (bool, string, string, string) {
 }
 
 func getUsersPubKey(w http.ResponseWriter, req *http.Request) {
+	descifrarDB("./db/usuarios.json.enc", "./db/usuarios.json")
+	rawUsers, err := ioutil.ReadFile("./db/usuarios.json")
+
+	chk(err)
+	_ = json.Unmarshal(rawUsers, &users)
+
 	split := strings.Split(req.Form.Get("Usuarios"), ",")
 	var pkeys string
 	for u := range split {
@@ -338,6 +354,7 @@ func getUsersPubKey(w http.ResponseWriter, req *http.Request) {
 
 	response := resp{Ok: true, Msg: "Claves obtenidas", Pubkey: pkeys}
 	sendToClient(w, response)
+	//borrarDB("./db/usuarios.json")	// da error: "El proceso no tiene acceso al archivo porque está siendo utilizado por otro proceso."
 }
 
 func listarTemas(w http.ResponseWriter, req *http.Request) {
@@ -348,13 +365,22 @@ func listarTemas(w http.ResponseWriter, req *http.Request) {
 	_ = json.Unmarshal(rawTemas, &temas)
 
 	response := respTemas{Ok: true, Msg: "Lista de Temas obtenida", Temas: temas}
+
 	sendToClient(w, response)
+	//borrarDB("./db/temas.json") // da error: "El proceso no tiene acceso al archivo porque está siendo utilizado por otro proceso."
 }
 
 func loginUser(w http.ResponseWriter, req *http.Request) {
+	descifrarDB("./db/usuarios.json.enc", "./db/usuarios.json")
+	rawUsers, err := ioutil.ReadFile("./db/usuarios.json")
+
+	chk(err)
+	_ = json.Unmarshal(rawUsers, &users)
+
 	res, msg, pubkey, prikey := checkUser(req)
 	response := resp{Ok: res, Msg: msg, Pubkey: pubkey, Prikey: prikey}
 	sendToClient(w, response)
+	//borrarDB("./db/usuarios.json")	// da error: "El proceso no tiene acceso al archivo porque está siendo utilizado por otro proceso."
 }
 
 // Validar el token de un usuario logueado
@@ -399,12 +425,19 @@ func handler(w http.ResponseWriter, req *http.Request) {
 }
 
 func server() {
-	rawUsers, err := ioutil.ReadFile("./db/usuarios.json")
-	chk(err)
+	descifrarDB("./db/temas.json.enc", "./db/temas.json")
 	rawTemas, err := ioutil.ReadFile("./db/temas.json")
 	chk(err)
+
+	descifrarDB("./db/usuarios.json.enc", "./db/usuarios.json")
+	rawUsers, err := ioutil.ReadFile("./db/usuarios.json")
+	chk(err)
+
 	_ = json.Unmarshal(rawUsers, &users)
 	_ = json.Unmarshal(rawTemas, &temas)
+
+	borrarDB("./db/usuarios.json")
+	borrarDB("./db/temas.json")
 
 	stopChan := make(chan os.Signal)
 	log.Println("Escuchando en: https://127.0.0.1:10443 ... ")
@@ -429,25 +462,6 @@ func response(w io.Writer, ok bool, msg string) {
 	w.Write(rJSON)                 // escribimos el JSON resultante
 }
 
-func home(w http.ResponseWriter, req *http.Request) {
-	//render(w, "../html/home.html", nil)
-	//render(w, "Conexion establecida ...", nil)
-	response(w, true, "Conexion establecida")
-}
-
-// Funcion que lee un archivo
-func render(w http.ResponseWriter, filename string, data interface{}) {
-	tmpl, err := template.ParseFiles(filename)
-	if err != nil {
-		log.Println(err)
-		http.Error(w, "Sorry, something went wrong", http.StatusInternalServerError)
-	}
-
-	if err := tmpl.Execute(w, data); err != nil {
-		log.Println(err)
-		http.Error(w, "Sorry, something went wrong", http.StatusInternalServerError)
-	}
-}
 func main() {
 	server()
 }
