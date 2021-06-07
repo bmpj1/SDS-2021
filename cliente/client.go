@@ -236,7 +236,7 @@ func (uiState *uiState) register(username, password string) {
 		uiState.ui.Eval(fmt.Sprintf(`alert("Usuario creado correctamente.")`))
 		uiState.renderLogin()
 	} else {
-		uiState.ui.Eval(fmt.Sprintf(`alert("Error en el registro")`))
+		uiState.ui.Eval(fmt.Sprintf(`alert("Error en el registro, ya existe ese usuario")`))
 	}
 }
 
