@@ -100,6 +100,7 @@ func cifrarDB(fileNameIn, fileNameOut string) {
 
 	fin, err = os.Open(fileNameIn)
 	chk(err)
+	defer fin.Close()
 
 	fout, err = os.Create(fileNameOut)
 	chk(err)
@@ -241,7 +242,7 @@ func registerUser(w http.ResponseWriter, req *http.Request) {
 	}
 	response := resp{Ok: res, Msg: msg}
 	sendToClient(w, response)
-	// borrarDB("./db/usuarios.json") // da error: "El proceso no tiene acceso al archivo porque está siendo utilizado por otro proceso."
+	borrarDB("./db/usuarios.json") // da error: "El proceso no tiene acceso al archivo porque está siendo utilizado por otro proceso."
 }
 
 func createTema(w http.ResponseWriter, req *http.Request) {
@@ -272,7 +273,7 @@ func createTema(w http.ResponseWriter, req *http.Request) {
 	cifrarDB("./db/temas.json", "./db/temas.json.enc")
 	response := resp{Ok: true, Msg: "Tema creado correctamente."}
 	sendToClient(w, response)
-	//borrarDB("./db/temas.json") // da error: "El proceso no tiene acceso al archivo porque está siendo utilizado por otro proceso."
+	borrarDB("./db/temas.json") // da error: "El proceso no tiene acceso al archivo porque está siendo utilizado por otro proceso."
 }
 
 func crearEntrada(w http.ResponseWriter, req *http.Request) {
@@ -299,7 +300,7 @@ func crearEntrada(w http.ResponseWriter, req *http.Request) {
 	cifrarDB("./db/temas.json", "./db/temas.json.enc")
 	response := resp{Ok: true, Msg: "Entrada creada correctamente."}
 	sendToClient(w, response)
-	//borrarDB("./db/temas.json")	// da error: "El proceso no tiene acceso al archivo porque está siendo utilizado por otro proceso."
+	borrarDB("./db/temas.json") // da error: "El proceso no tiene acceso al archivo porque está siendo utilizado por otro proceso."
 }
 
 func generateToken() string {
@@ -354,7 +355,7 @@ func getUsersPubKey(w http.ResponseWriter, req *http.Request) {
 
 	response := resp{Ok: true, Msg: "Claves obtenidas", Pubkey: pkeys}
 	sendToClient(w, response)
-	//borrarDB("./db/usuarios.json")	// da error: "El proceso no tiene acceso al archivo porque está siendo utilizado por otro proceso."
+	borrarDB("./db/usuarios.json") // da error: "El proceso no tiene acceso al archivo porque está siendo utilizado por otro proceso."
 }
 
 func listarTemas(w http.ResponseWriter, req *http.Request) {
@@ -367,7 +368,7 @@ func listarTemas(w http.ResponseWriter, req *http.Request) {
 	response := respTemas{Ok: true, Msg: "Lista de Temas obtenida", Temas: temas}
 
 	sendToClient(w, response)
-	//borrarDB("./db/temas.json") // da error: "El proceso no tiene acceso al archivo porque está siendo utilizado por otro proceso."
+	borrarDB("./db/temas.json") // da error: "El proceso no tiene acceso al archivo porque está siendo utilizado por otro proceso."
 }
 
 func loginUser(w http.ResponseWriter, req *http.Request) {
@@ -380,7 +381,7 @@ func loginUser(w http.ResponseWriter, req *http.Request) {
 	res, msg, pubkey, prikey := checkUser(req)
 	response := resp{Ok: res, Msg: msg, Pubkey: pubkey, Prikey: prikey}
 	sendToClient(w, response)
-	//borrarDB("./db/usuarios.json")	// da error: "El proceso no tiene acceso al archivo porque está siendo utilizado por otro proceso."
+	borrarDB("./db/usuarios.json") // da error: "El proceso no tiene acceso al archivo porque está siendo utilizado por otro proceso."
 }
 
 // Validar el token de un usuario logueado
@@ -435,6 +436,15 @@ func server() {
 
 	_ = json.Unmarshal(rawUsers, &users)
 	_ = json.Unmarshal(rawTemas, &temas)
+	/**
+	* Para resetear la bbdd:
+	* 1: Hay que eliminar los .enc y dejar los .json vacios
+	* 2: Comentar los 2 descifrados anteriores
+	* 3: Descomentar las dos lineas siguientes
+	* 4: lanzar el servidor y reiniciarlo desaciendo los pasos anteriores.
+	 */
+	//cifrarDB("./db/usuarios.json", "./db/usuarios.json.enc")
+	//cifrarDB("./db/temas.json", "./db/temas.json.enc")
 
 	borrarDB("./db/usuarios.json")
 	borrarDB("./db/temas.json")

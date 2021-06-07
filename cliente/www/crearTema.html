@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Crear copia</title>
+    <title>Crear Tema</title>
     <link rel="shortcut icon" href="favicon.png">
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
 </head>
@@ -10,11 +10,13 @@
 <div class="container">
     <label for="nombreTema">Introduce el nombre del tema</label>
     <input type="text" id="nombreTema"/>
+    <br>
     <label for="privacidad">Privacidad</label>
     <select name="privacidad" id="privacidad" onchange="change()">
         <option value="privada" selected>Privada</option>
         <option value="publica">Publica</option>
     </select>
+    <br>
     <label id="labelUsuarios" for="usuarios">Introduce la id de los usuarios a compartir</label>
     <input type="text" id="usuarios" placeholder="usu1,usu2"/>
     <div class="mt-5 row">

@@ -261,7 +261,7 @@ func (uiState *uiState) Login(usuario, password string) {
 	if response.Ok {
 		_ = json.Unmarshal(decompress(decode64(response.Pubkey)), &loggedUser.pubkey)
 		_ = json.Unmarshal(decompress(decrypt(decode64(response.Prikey), cipherKey)), &loggedUser.prikey)
-		fmt.Println(loggedUser.prikey)
+		//fmt.Println(loggedUser.prikey)
 
 		loggedUser.username = encode64([]byte(usuario))
 		loggedUser.token = response.Msg
@@ -481,7 +481,7 @@ func (uiState *uiState) crearTema(Name, Tipo, usuarios string) {
 func (uiState *uiState) crearEntrada(Text string) {
 	var tipo string
 	if temas.Ok {
-		fmt.Println("TIPO VISIBILIDAD CREAR ENTRADA: ", tipoVisibilidad)
+		//fmt.Println("TIPO VISIBILIDAD CREAR ENTRADA: ", tipoVisibilidad)
 
 		if tipoVisibilidad == "publica" { // publica
 			tipo = string(decrypt(decode64(temas.Temas[idTema].Tipo), decode64(temas.Temas[idTema].KeyTema)))
@@ -516,7 +516,7 @@ func (uiState *uiState) crearEntrada(Text string) {
 					if temaKey != "" {
 						//fmt.Println("ASDASDASDQWDSAD")
 						tipo = string(decrypt(decode64(temas.Temas[idTema].Tipo), []byte(temaKey)))
-						fmt.Println("temakey: ", temaKey)
+						//fmt.Println("temakey: ", temaKey)
 						if tipo == tipoVisibilidad {
 							data := url.Values{} // estructura para contener los valores
 							data.Set("cmd", "crearEntrada")
