@@ -84,6 +84,19 @@ func encode64(data []byte) string {
 	return base64.StdEncoding.EncodeToString(data) // sólo utiliza caracteres "imprimibles"
 }
 
+func writeLog(message string) {
+	f, err := os.OpenFile("text.log",
+		os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		log.Println(err)
+	}
+	defer f.Close()
+
+	logger := log.New(f, "log ", log.LstdFlags)
+	logger.Println(message)
+
+}
+
 func cifrarDB(fileNameIn, fileNameOut string) {
 	hash := sha256.New()
 	hash.Reset()
@@ -239,6 +252,9 @@ func registerUser(w http.ResponseWriter, req *http.Request) {
 		err = ioutil.WriteFile("./db/usuarios.json", jsonString, 0644)
 		chk(err)
 		cifrarDB("./db/usuarios.json", "./db/usuarios.json.enc")
+		writeLog("Se ha creado el usuario: '" + string(decode64(u.Name)) + "'")
+	} else {
+		writeLog("Error al crear el usuario: '" + string(decode64(req.Form.Get("user"))) + "' -- Ya existe un usuario con ese nombre")
 	}
 	response := resp{Ok: res, Msg: msg}
 	sendToClient(w, response)
@@ -263,6 +279,7 @@ func createTema(w http.ResponseWriter, req *http.Request) {
 	t.Bloqueado = false
 	t.Usuario = req.Form.Get("Usuario")
 	t.Id = len(temas)
+	writeLog("El usuario '" + string(decode64(req.Form.Get("Usuario"))) + "' esta intentando crear un tema con Id '" + strconv.Itoa(t.Id) + "'")
 
 	temas[strconv.Itoa(t.Id)] = t
 	jsonString, err := json.Marshal(temas)
@@ -291,7 +308,10 @@ func crearEntrada(w http.ResponseWriter, req *http.Request) {
 	//fmt.Println("Tema:" + req.Form.Get("Id") + "  ---- Texto de la entrada: " + e.Text + " ---- Fecha: " + e.Date.String())
 	//fmt.Println(temas)
 	var idEntrada = strconv.Itoa(len(temas[req.Form.Get("Id")].Entradas))
+	writeLog("El usuario '" + string(decode64(e.Username)) + "' esta intentando crear la entrada con Id '" + idEntrada + "' en el tema con Id '" + req.Form.Get("Id") + "'")
+
 	temas[req.Form.Get("Id")].Entradas[idEntrada] = e
+
 	jsonString, err := json.Marshal(temas)
 	chk(err)
 
@@ -310,6 +330,7 @@ func generateToken() string {
 	for i, b := range token {
 		token[i] = alphanum[b%byte(len(alphanum))]
 	}
+
 	return string(token)
 }
 
@@ -333,6 +354,8 @@ func checkUser(req *http.Request) (bool, string, string, string) {
 		return false, "Credenciales inválidas", "", ""
 	}
 	token := generateToken()
+	writeLog(" Se ha generado el token " + string(token) + " para el usuario '" + string(decode64(req.Form.Get("user"))) + "'")
+
 	tokens[u.Name] = token
 	return true, token, pubkey, prikey
 }
@@ -353,6 +376,8 @@ func getUsersPubKey(w http.ResponseWriter, req *http.Request) {
 		}
 	}
 
+	writeLog("El usuario '" + string(decode64(req.Form.Get("Usuario"))) + "' ha intentado obtener su clave publica y la de '" + strconv.Itoa(len(split)-1) + "' usuarios mas")
+
 	response := resp{Ok: true, Msg: "Claves obtenidas", Pubkey: pkeys}
 	sendToClient(w, response)
 	borrarDB("./db/usuarios.json") // da error: "El proceso no tiene acceso al archivo porque está siendo utilizado por otro proceso."
@@ -366,6 +391,7 @@ func listarTemas(w http.ResponseWriter, req *http.Request) {
 	_ = json.Unmarshal(rawTemas, &temas)
 
 	response := respTemas{Ok: true, Msg: "Lista de Temas obtenida", Temas: temas}
+	writeLog("El usuario '" + string(decode64(req.Form.Get("user"))) + "' ha obtenido la lista de temas con los datos cifrados")
 
 	sendToClient(w, response)
 	borrarDB("./db/temas.json") // da error: "El proceso no tiene acceso al archivo porque está siendo utilizado por otro proceso."
@@ -380,6 +406,9 @@ func loginUser(w http.ResponseWriter, req *http.Request) {
 
 	res, msg, pubkey, prikey := checkUser(req)
 	response := resp{Ok: res, Msg: msg, Pubkey: pubkey, Prikey: prikey}
+
+	writeLog("El usuario '" + string(decode64(req.Form.Get("user"))) + "' ha intentado hacer login con el resultado: " + msg)
+
 	sendToClient(w, response)
 	borrarDB("./db/usuarios.json") // da error: "El proceso no tiene acceso al archivo porque está siendo utilizado por otro proceso."
 }
@@ -387,11 +416,13 @@ func loginUser(w http.ResponseWriter, req *http.Request) {
 // Validar el token de un usuario logueado
 func checkToken(token, username string, w http.ResponseWriter) bool {
 	if token == tokens[username] {
+		writeLog("Se ha validado correctamente el token")
 		return true
 	} else {
 		response := resp{Ok: false, Msg: "Token no válido"}
 		sendToClient(w, response)
 		fmt.Println("token no valido")
+		writeLog("Se ha validado el token como invalido")
 		return false
 	}
 }
@@ -400,22 +431,28 @@ func handler(w http.ResponseWriter, req *http.Request) {
 	w.Header().Set("Content-Type", "text/plain") // cabecera estándar
 	switch req.Form.Get("cmd") {                 // comprobamos comando desde el cliente
 	case "register":
+		writeLog("Intentando registrar un usuario")
 		registerUser(w, req)
 	case "login":
+		writeLog("Un usuario ha intentado hacer login")
 		loginUser(w, req)
 	case "getUsersPubKey":
+		writeLog("Intentando obtener las claves publicas de algunos usuarios")
 		if checkToken(req.Form.Get("token"), req.Form.Get("Usuario"), w) {
 			getUsersPubKey(w, req)
 		}
 	case "crearTema":
+		writeLog("Intentando crear un tema nuevo")
 		if checkToken(req.Form.Get("token"), req.Form.Get("Usuario"), w) {
 			createTema(w, req)
 		}
 	case "crearEntrada":
+		writeLog("Intentando crear una entrada nueva en un tema")
 		if checkToken(req.Form.Get("token"), req.Form.Get("user"), w) {
 			crearEntrada(w, req)
 		}
 	case "listarTemas":
+		writeLog("Intentando obtener la lista de temas")
 		if checkToken(req.Form.Get("token"), req.Form.Get("user"), w) {
 			listarTemas(w, req)
 		}
@@ -426,6 +463,7 @@ func handler(w http.ResponseWriter, req *http.Request) {
 }
 
 func server() {
+	writeLog("Inicializando servidor...")
 	descifrarDB("./db/temas.json.enc", "./db/temas.json")
 	rawTemas, err := ioutil.ReadFile("./db/temas.json")
 	chk(err)
@@ -461,6 +499,9 @@ func server() {
 		}
 	}()
 	<-stopChan
+
+	writeLog("Apagando servidor ...")
+	writeLog("Servidor detenido correctamente")
 	log.Println("Apagando servidor ...")
 	log.Println("Servidor detenido correctamente")
 }

@@ -294,6 +294,8 @@ func RSA_OAEP_Decrypt(cipherText string, privKey rsa.PrivateKey) string {
 func (uiState *uiState) getTemas() {
 	data := url.Values{}
 	data.Set("cmd", "listarTemas")
+	data.Set("user", loggedUser.username)
+	data.Set("token", loggedUser.token)
 	jsonResponse := sendToServer(data)
 	err := json.Unmarshal(jsonResponse, &temas)
 	chk(err)

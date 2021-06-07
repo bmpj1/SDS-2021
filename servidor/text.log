@@ -1,0 +1,49 @@
+log 2021/06/07 16:13:20 Apagando servidor ...
+log 2021/06/07 16:13:20 Servidor detenido correctamente
+log 2021/06/07 16:13:22 Inicializando servidor...
+log 2021/06/07 16:13:36 Intentando registrar un usuario
+log 2021/06/07 16:13:36 Error al crear el usuario: 'a' -- Ya existe un usuario con ese nombre
+log 2021/06/07 16:13:52 Intentando registrar un usuario
+log 2021/06/07 16:13:52 Se ha creado el usuario: 'qwe'
+log 2021/06/07 16:13:57 Un usuario ha intentado hacer login
+log 2021/06/07 16:13:57 El usuario 'qwe' ha intentado hacer login con el resultado: Credenciales inválidas
+log 2021/06/07 16:14:01 Un usuario ha intentado hacer login
+log 2021/06/07 16:14:01 El usuario 'qwew' ha intentado hacer login con el resultado: Usuario inexistente
+log 2021/06/07 16:14:11 Un usuario ha intentado hacer login
+log 2021/06/07 16:14:11  Se ha generado el token xY2Pqc4y8EDn1z4S para el usuario 'qwe'
+log 2021/06/07 16:14:11 El usuario 'qwe' ha intentado hacer login con el resultado: xY2Pqc4y8EDn1z4S
+log 2021/06/07 16:14:21 Intentando obtener las claves publicas de algunos usuarios
+log 2021/06/07 16:14:21 Se ha validado correctamente el token
+log 2021/06/07 16:14:21 El usuario 'qwe' ha intentado obtener su clave publica y la de '1' usuarios mas
+log 2021/06/07 16:14:21 Intentando crear un tema nuevo
+log 2021/06/07 16:14:21 Se ha validado correctamente el token
+log 2021/06/07 16:14:21 El usuario '' esta intentando crear un tema con Id '5'
+log 2021/06/07 16:14:34 Intentando obtener las claves publicas de algunos usuarios
+log 2021/06/07 16:14:34 Se ha validado correctamente el token
+log 2021/06/07 16:14:34 El usuario 'qwe' ha intentado obtener su clave publica y la de '1' usuarios mas
+log 2021/06/07 16:14:34 Intentando crear un tema nuevo
+log 2021/06/07 16:14:34 Se ha validado correctamente el token
+log 2021/06/07 16:14:34 El usuario 'qwe' esta intentando crear un tema con Id '6'
+log 2021/06/07 16:15:05 Intentando obtener la lista de temas
+log 2021/06/07 16:15:05 Se ha validado correctamente el token
+log 2021/06/07 16:15:05 El usuario 'qwe' ha obtenido la lista de temas con los datos cifrados
+log 2021/06/07 16:15:07 Intentando obtener la lista de temas
+log 2021/06/07 16:15:07 Se ha validado correctamente el token
+log 2021/06/07 16:15:07 El usuario 'qwe' ha obtenido la lista de temas con los datos cifrados
+log 2021/06/07 16:18:55 Intentando obtener la lista de temas
+log 2021/06/07 16:18:55 Se ha validado correctamente el token
+log 2021/06/07 16:18:55 El usuario 'qwe' ha obtenido la lista de temas con los datos cifrados
+log 2021/06/07 16:19:06 Intentando obtener la lista de temas
+log 2021/06/07 16:19:06 Se ha validado correctamente el token
+log 2021/06/07 16:19:06 El usuario 'qwe' ha obtenido la lista de temas con los datos cifrados
+log 2021/06/07 16:19:47 Intentando crear una entrada nueva en un tema
+log 2021/06/07 16:19:47 Se ha validado correctamente el token
+log 2021/06/07 16:19:47 El usuario 'qwe' esta intentando crear la entrada con Id '0' en el tema con Id '6'
+log 2021/06/07 16:20:11 Intentando obtener las claves publicas de algunos usuarios
+log 2021/06/07 16:20:11 Se ha validado correctamente el token
+log 2021/06/07 16:20:11 El usuario 'qwe' ha intentado obtener su clave publica y la de '3' usuarios mas
+log 2021/06/07 16:20:11 Intentando crear un tema nuevo
+log 2021/06/07 16:20:11 Se ha validado correctamente el token
+log 2021/06/07 16:20:11 El usuario 'qwe' esta intentando crear un tema con Id '7'
+log 2021/06/07 16:20:55 Apagando servidor ...
+log 2021/06/07 16:20:55 Servidor detenido correctamente
