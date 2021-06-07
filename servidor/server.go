@@ -2,7 +2,11 @@ package main
 
 import (
 	"bytes"
+	"compress/zlib"
+	"crypto/aes"
+	"crypto/cipher"
 	"crypto/rand"
+	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -20,8 +24,6 @@ import (
 	"golang.org/x/crypto/scrypt"
 )
 
-var kcifradodb string = "serverKey"
-
 type user struct {
 	Name   string `json:"Name"`   // nombre de usuario
 	Prikey string `json:"Prikey"` // sal para la contraseña
@@ -36,8 +38,8 @@ type entrada struct {
 }
 
 type tema struct {
-	KeyTema   string             `json:"KeyTema"` // clave para cifrar tema
 	Id        int                `json:"Id"`      // Nombre del tema
+	KeyTema   string             `json:"KeyTema"` // clave para cifrar tema
 	Usuario   string             `json:"User"`    // propietario del tema
 	Name      string             `json:"Name"`    // Nombre del tema
 	Tipo      string             `json:"Tipo"`    // Tipo de tema (Publico / privado)
@@ -58,6 +60,7 @@ type respTemas struct {
 	Temas map[string]tema //
 }
 
+var serverKey = "serverKey"
 var users = map[string]user{}
 var temas = map[string]tema{}
 var tokens = map[string]string{}
@@ -81,6 +84,102 @@ func encode64(data []byte) string {
 	return base64.StdEncoding.EncodeToString(data) // sólo utiliza caracteres "imprimibles"
 }
 
+func cifrarDB(fileNameIn, fileNameOut string) {
+	hash := sha256.New()
+	hash.Reset()
+	_, err := hash.Write([]byte(serverKey))
+	chk(err)
+	key := hash.Sum(nil)
+
+	hash.Reset()
+	_, err = hash.Write([]byte("<inicializar>"))
+	chk(err)
+	iv := hash.Sum(nil)
+
+	var fin, fout *os.File
+
+	fin, err = os.Open(fileNameIn)
+	chk(err)
+
+	fout, err = os.Create(fileNameOut)
+	chk(err)
+	defer fout.Close()
+
+	var stream cipher.Stream
+
+	block, err := aes.NewCipher(key)
+	chk(err)
+	stream = cipher.NewCTR(block, iv[:16])
+
+	var r io.Reader
+	var w io.WriteCloser
+
+	var enc cipher.StreamWriter
+	enc.S = stream
+	enc.W = fout
+
+	r = fin
+
+	w = zlib.NewWriter(enc)
+	_, err = io.Copy(w, r)
+	chk(err)
+	w.Close()
+
+}
+
+func descifrarDB(fileNameIn, fileNameOut string) {
+	hash := sha256.New()
+	hash.Reset()
+	_, err := hash.Write([]byte(serverKey))
+	chk(err)
+	key := hash.Sum(nil)
+
+	hash.Reset()
+	_, err = hash.Write([]byte("<inicializar>"))
+	chk(err)
+	iv := hash.Sum(nil)
+
+	var fin, fout *os.File
+
+	fin, err = os.Open(fileNameIn)
+	chk(err)
+	defer fin.Close()
+
+	fout, err = os.Create(fileNameOut)
+	chk(err)
+	defer fout.Close()
+
+	var Stream cipher.Stream
+	block, err := aes.NewCipher(key)
+	chk(err)
+	Stream = cipher.NewCTR(block, iv[:16])
+
+	var r io.Reader
+	var w io.WriteCloser
+
+	var dec cipher.StreamReader
+	dec.S = Stream
+	dec.R = fin
+
+	w = fout
+
+	r, err = zlib.NewReader(dec)
+	if err != nil {
+		fmt.Println("Clave de acceso a la bd incorrecta")
+		os.Exit(1)
+	}
+	fmt.Println("BD descifrada.")
+
+	_, err = io.Copy(w, r)
+	chk(err)
+	w.Close()
+}
+
+func borrarDB(fileNameIn string) {
+	err := os.Remove(fileNameIn)
+	chk(err)
+}
+
 // Guardamos los usuarios en la db de usuarios
 func saveData(username string) {
 	jsonString, err := json.Marshal(users)
@@ -96,6 +195,7 @@ func saveTemaData() {
 	jsonString, err := json.Marshal(temas)
 	chk(err)
 	ioutil.WriteFile("./db/temas.json", jsonString, 0644)
+	cifrarDB("./db/temas.json", "./db/temas.json.enc")
 }
 
 /**
@@ -156,13 +256,19 @@ func createTema(w http.ResponseWriter, req *http.Request) {
 	t := tema{}
 	t.Name = req.Form.Get("Name") // nombre
 	t.Tipo = req.Form.Get("Tipo") // Tipo de visibilidad: publica o privada
-	t.KeyTema = req.Form.Get("KeyTema")
 
+	// if t.Tipo == "9oU89FrtXChu/3XAHrs2W0qa+VEdJJE=" { //publica (no va del todo bien...)
+
+	// } else { //privado
+
+	// }
+
+	t.KeyTema = req.Form.Get("KeyTema")
 	t.Entradas = make(map[string]entrada)
 	t.Bloqueado = false
 	t.Usuario = req.Form.Get("Usuario")
 	t.Id = len(temas)
-	fmt.Println("Nombre del tema: " + t.Name + " Tipo de tema: " + t.Tipo)
+	fmt.Println("Nombre del tema: " + t.Name + " Tipo de tema: " + t.KeyTema)
 
 	temas[strconv.Itoa(t.Id)] = t
 
@@ -224,7 +330,6 @@ func getUsersPubKey(w http.ResponseWriter, req *http.Request) {
 	split := strings.Split(req.Form.Get("Usuarios"), ",")
 	var pkeys string
 	for u := range split {
-		fmt.Println("splited: ", split[u])
 		name := encode64([]byte(split[u]))
 		if users[name].Name != "" {
 			pkeys += users[name].Pubkey + " "
@@ -236,7 +341,9 @@ func getUsersPubKey(w http.ResponseWriter, req *http.Request) {
 }
 
 func listarTemas(w http.ResponseWriter, req *http.Request) {
+	descifrarDB("./db/temas.json.enc", "./db/temas.json")
 	rawTemas, err := ioutil.ReadFile("./db/temas.json")
+
 	chk(err)
 	_ = json.Unmarshal(rawTemas, &temas)
 

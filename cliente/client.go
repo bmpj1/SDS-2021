@@ -22,6 +22,7 @@ import (
 	"os/signal"
 	"runtime"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/zserge/lorca"
@@ -115,7 +116,7 @@ type User struct {
 	username string
 	token    string
 	pubkey   rsa.PublicKey
-	prikey   string
+	prikey   rsa.PrivateKey
 }
 
 // respuesta del servidor
@@ -260,7 +261,9 @@ func (uiState *uiState) Login(usuario, password string) {
 
 	if response.Ok {
 		_ = json.Unmarshal(decompress(decode64(response.Pubkey)), &loggedUser.pubkey)
-		loggedUser.prikey = response.Prikey
+		_ = json.Unmarshal(decompress(decrypt(decode64(response.Prikey), cipherKey)), &loggedUser.prikey)
+		fmt.Println(loggedUser.prikey)
+
 		loggedUser.username = encode64([]byte(usuario))
 		loggedUser.token = response.Msg
 
@@ -288,10 +291,41 @@ func (uiState *uiState) getTemas() {
 		for key, estructura := range temas.Temas {
 			//fmt.Println("\nKey(nombre del tema):", string(decrypt(decode64(estructura.Name), decode64(estructura.KeyTema))), " Id: ", key, " ---- Entradas del tema: ", estructura.Entradas)
 			//fmt.Println("id = " + key)
-			nombre := string(decrypt(decode64(estructura.Name), decode64(estructura.KeyTema)))
-			tipo := string(decrypt(decode64(estructura.Tipo), decode64(estructura.KeyTema)))
-			if tipo == tipoVisibilidad {
-				uiState.ui.Eval(fmt.Sprintf(`$("#getTemas").append('<button type="button" class="btn btn-secondary" id="%v" onClick="verTema(this)" >%v</button>');`, key, nombre))
+			var nombre string
+			var tipo string
+			if len(estructura.KeyTema) == 44 && tipoVisibilidad == "publica" { // publica
+				nombre = string(decrypt(decode64(estructura.Name), decode64(estructura.KeyTema)))
+				tipo = string(decrypt(decode64(estructura.Tipo), decode64(estructura.KeyTema)))
+
+				if tipo == tipoVisibilidad {
+					uiState.ui.Eval(fmt.Sprintf(`$("#getTemas").append('<button type="button" class="btn btn-secondary" id="%v" onClick="verTema(this)" >%v</button>');`, key, nombre))
+				}
+			} else if len(estructura.KeyTema) != 44 && tipoVisibilidad == "privada" { // privada
+
+				// data.Set("KeyTema", encode64([]byte(keyTemaCifradas)))
+				// data.Set("Name", encode64(encrypt([]byte(Name), []byte(keyTema))))
+				split := strings.Split(estructura.KeyTema, " ")
+				for key := range split {
+					if split[key] != "" {
+
+						// fmt.Println("ASD: ", loggedUser.prikey)
+
+						// decryptedBytes, err := loggedUser.prikey.Decrypt(nil, []byte(split[key]), &rsa.OAEPOptions{Hash: crypto.SHA256})
+						// if err != nil {
+						// 	panic(err)
+						// }
+						// fmt.Println("KEYS: ", string(decryptedBytes))
+
+						//fmt.Println("KEYS: ", decompress(decode64(split[key])))
+					}
+				}
+
+				//fmt.Println("MY KEY: ", loggedUser.pubkey)
+
+				/*tieneMiPulicKey := strings.Contains(decode64(estructura.KeyTema), loggedUser.pubkey)
+
+				nombre = string(decrypt(decode64(estructura.Name), decode64(estructura.KeyTema)))
+				tipo = string(decrypt(decode64(estructura.Tipo), decode64(estructura.KeyTema)))*/
 			}
 			//uiState.ui.Eval(fmt.Sprintf((`seevswev`), key, key))
 		}
@@ -363,7 +397,7 @@ func (uiState *uiState) crearTema(Name, Tipo, usuarios string) {
 	if Name == "" {
 		uiState.ui.Eval(fmt.Sprintf(`alert("El tema debera tener un nombre")`))
 	} else {
-		aux := make([]byte, 32)
+		aux := make([]byte, 16)
 		rand.Read(aux)
 		hash := sha256.New()
 		hash.Reset()
@@ -371,18 +405,56 @@ func (uiState *uiState) crearTema(Name, Tipo, usuarios string) {
 		chk(err)
 		keyTema := hash.Sum(nil)
 
-		//pubkeys := getUsersPubKey(usuarios)
+		pubkeys := getUsersPubKey(usuarios)
 
-		if Tipo == "publico" {
+		if Tipo == "publica" {
 			data := url.Values{} // estructura para contener los valores
 			data.Set("cmd", "crearTema")
-			data.Set("KeyTema", encode64(keyTema))
-			data.Set("Name", encode64(encrypt([]byte(Name), keyTema)))
-			data.Set("Tipo", encode64(encrypt([]byte(Tipo), keyTema)))
+			data.Set("KeyTema", encode64([]byte(keyTema)))
+			data.Set("Name", encode64(encrypt([]byte(Name), []byte(keyTema))))
+			data.Set("Tipo", encode64(encrypt([]byte(Tipo), []byte(keyTema))))
 			data.Set("Usuario", loggedUser.username)
 			data.Set("token", loggedUser.token)
 
-			//fmt.Println(data)
+			jsonResponse := sendToServer(data)
+			var response resp
+			err = json.Unmarshal(jsonResponse, &response)
+			if response.Ok {
+				uiState.ui.Eval(fmt.Sprintf(`alert("Tema creado correctamente.")`))
+				uiState.renderMenuPage()
+			} else {
+				uiState.ui.Eval(fmt.Sprintf(`alert("Error en publicar un tema")`))
+			}
+		} else {
+			// cifrar el tema tantas veces como usuarios tenga para compartir
+			split := strings.Split(pubkeys, " ")
+			var keyTemaCifradas string
+			for key := range split {
+				if split[key] != "" {
+					var keyPub rsa.PublicKey
+					_ = json.Unmarshal(decompress(decode64(split[key])), &keyPub)
+
+					fmt.Println("Recivido: ", split[key], "\n")
+					fmt.Println("Recivido2: ", decompress(decode64(split[key])), "\n")
+					fmt.Println("Recivido3: ", keyPub, "\n")
+
+					encryptedBytes, err := rsa.EncryptOAEP(
+						sha256.New(),
+						rand.Reader,
+						&keyPub,
+						[]byte(string(keyTema)),
+						nil)
+					chk(err)
+					keyTemaCifradas += encode64(compress(encryptedBytes)) + " "
+				}
+			}
+			data := url.Values{}
+			data.Set("cmd", "crearTema")
+			data.Set("KeyTema", keyTemaCifradas)
+			data.Set("Name", encode64(encrypt([]byte(Name), []byte(keyTema))))
+			data.Set("Tipo", encode64(encrypt([]byte(Tipo), []byte(keyTema))))
+			data.Set("Usuario", loggedUser.username)
+			data.Set("token", loggedUser.token)
 			jsonResponse := sendToServer(data)
 			var response resp
 			err = json.Unmarshal(jsonResponse, &response)
@@ -393,7 +465,6 @@ func (uiState *uiState) crearTema(Name, Tipo, usuarios string) {
 			} else {
 				uiState.ui.Eval(fmt.Sprintf(`alert("Error en publicar un tema")`))
 			}
-
 		}
 	}
 }
