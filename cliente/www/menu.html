@@ -2,32 +2,26 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Menu</title>
+    <title>Home</title>
     <link rel="shortcut icon" href="favicon.png">
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
 </head>
 <body>
-
-    <div style="text-align: center; font-size: 60px; border: 1px solid red;"> Bienvenido
-        <span style="color: green;">a</span> tu <span style="color: orange;">foro</span>.
-    </div>
-
-    <div style="border: 1px solid green;">
-        <div class="container center-h center-v">
-            <div class="child">
-                <div class="btn-group" role="group" aria-label="Basic example">
-                    <button id="crear" type="button" class="btn btn-secondary">Crear Tema</button>
+    <div class="container">
+      <div class="row">
+          <div class="col-sm-9 col-md-7 col-lg-5 mx-auto">
+              <div class="card card-signin my-5">
+                  <div class="card-body">
+                      <h1 class="card-title text-center">Options</h1>
+                      <form class="form-signin">
+                      <button class="btn btn-lg btn-primary btn-block text-uppercase" id="listarTemas">View topics</button>
+                      <button class="btn btn-lg btn-secondary btn-block text-uppercase" id="crear">Create Topic</button>
+                      <button class="btn btn-lg btn-danger btn-block text-uppercase" id="cerrar">Sign Out</button>
+                      </form>
                   </div>
-            </div>
-            <div class="child">
-              <div class="btn-group" role="group" aria-label="Basic example">
-                  <button id="listarTemas" type="button" class="btn btn-primary">Listar todos los temas</button>
-                </div>
+              </div>
           </div>
-        </div>
-
-    <div style="border: 1px solid blue;"> 
-      <button id="cerrar" type="button" class="btn btn-danger">Cerrar Sesión</button>
+      </div>
     </div>
 
     <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
@@ -35,36 +29,96 @@
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
     <script>
         $('#listarTemas').click(async () => {
-            await listarTemas()
+            await listarTemas("publica")
         });
 
         $('#crear').click(async () => {
             await crearTema()
         });
         $('#cerrar').click(async () => {
-          await registerPage()
+          await loginPage()
         });
     </script>
-      <style>
-      .container {
-        background: #e0e0e0;
-        margin: 0 0 1rem;
-        height: 10rem;
-        display: flex;
-        /* align-items por defecto tiene el valor `stretch` */
-        align-items: start;
-      }
-      .center-h {
-        justify-content: center;
-      }
-      .center-v {
-        align-items: center;
-      }
-      .child {
-        background: #60e0b0;
-        padding: .2rem;
-      }
-      </style>
+<style>
+  :root {
+    --input-padding-x: 1.5rem;
+    --input-padding-y: .75rem
+}
+
+body {
+    background: linear-gradient(to right, #000000, #01315C)
+}
+
+.card-signin {
+    border: 0;
+    border-radius: 0rem;
+    box-shadow: 0 0.5rem 1rem 0 rgba(0, 0, 0, 0.1)
+}
+
+.card-signin .card-title {
+    margin-bottom: 2rem;
+    font-weight: 300;
+    font-size: 1.5rem
+}
+
+.card-signin .card-body {
+    padding: 4rem
+}
+
+.form-signin {
+    width: 100%
+}
+
+.form-signin .btn {
+    font-size: 80%;
+    border-radius: 0rem;
+    letter-spacing: .1rem;
+    font-weight: bold;
+    padding: 1rem;
+    transition: all 0.2s
+}
+
+.form-label-group {
+    position: relative;
+    margin-bottom: 1rem
+}
+
+.form-label-group input {
+    height: auto
+}
+
+.form-label-group>input,
+.form-label-group>label {
+    padding: var(--input-padding-y) var(--input-padding-x)
+}
+
+.form-label-group>label {
+    position: absolute;
+    top: 0;
+    left: 0;
+    display: block;
+    width: 100%;
+    margin-bottom: 0;
+    line-height: 1.5;
+    color: #495057;
+    border: 1px solid transparent;
+    border-radius: .25rem;
+    transition: all .1s ease-in-out
+}
+
+.form-control:focus {
+    box-shadow: 10px 0px 0px 0px #ffffff !important
+}
+
+.btn-google {
+    color: white;
+    background-color: #ea4335
+}
+
+.btn-facebook {
+    color: white;
+    background-color: #3b5998
+}
+</style>
 </body>
 </html>
-

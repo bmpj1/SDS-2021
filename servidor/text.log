@@ -1,0 +1,176 @@
+log 2021/06/07 18:43:52 Inicializando servidor...
+log 2021/06/07 18:43:57 Apagando servidor ...
+log 2021/06/07 18:43:57 Servidor detenido correctamente
+log 2021/06/07 18:44:07 Inicializando servidor...
+log 2021/06/07 18:44:53 Intentando registrar un usuario
+log 2021/06/07 18:44:54 Se ha creado el usuario: 'usu'
+log 2021/06/07 18:45:01 Intentando registrar un usuario
+log 2021/06/07 18:45:01 Se ha creado el usuario: 'usu2'
+log 2021/06/07 18:45:08 Un usuario ha intentado hacer login
+log 2021/06/07 18:45:08  Se ha generado el token duAhhU8FIur5MZnZ para el usuario 'usu'
+log 2021/06/07 18:45:08 El usuario 'usu' ha intentado hacer login con el resultado: duAhhU8FIur5MZnZ
+log 2021/06/07 18:45:23 Intentando obtener las claves publicas de algunos usuarios
+log 2021/06/07 18:45:23 Se ha validado correctamente el token
+log 2021/06/07 18:45:23 El usuario 'usu' ha intentado obtener su clave publica y la de '1' usuarios mas
+log 2021/06/07 18:45:23 Intentando crear un tema nuevo
+log 2021/06/07 18:45:23 Se ha validado correctamente el token
+log 2021/06/07 18:45:23 El usuario 'usu' esta intentando crear un tema con Id '0'
+log 2021/06/07 18:45:52 Intentando obtener las claves publicas de algunos usuarios
+log 2021/06/07 18:45:52 Se ha validado correctamente el token
+log 2021/06/07 18:45:52 El usuario 'usu' ha intentado obtener su clave publica y la de '1' usuarios mas
+log 2021/06/07 18:45:52 Intentando crear un tema nuevo
+log 2021/06/07 18:45:52 Se ha validado correctamente el token
+log 2021/06/07 18:45:52 El usuario 'usu' esta intentando crear un tema con Id '1'
+log 2021/06/07 18:46:06 Intentando obtener las claves publicas de algunos usuarios
+log 2021/06/07 18:46:06 Se ha validado correctamente el token
+log 2021/06/07 18:46:06 El usuario 'usu' ha intentado obtener su clave publica y la de '1' usuarios mas
+log 2021/06/07 18:46:06 Intentando crear un tema nuevo
+log 2021/06/07 18:46:06 Se ha validado correctamente el token
+log 2021/06/07 18:46:06 El usuario 'usu' esta intentando crear un tema con Id '2'
+log 2021/06/07 18:46:10 Intentando obtener la lista de temas
+log 2021/06/07 18:46:10 Se ha validado correctamente el token
+log 2021/06/07 18:46:10 El usuario 'usu' ha obtenido la lista de temas con los datos cifrados
+log 2021/06/07 18:46:19 Intentando crear una entrada nueva en un tema
+log 2021/06/07 18:46:19 Se ha validado correctamente el token
+log 2021/06/07 18:46:19 El usuario 'usu' esta intentando crear la entrada con Id '0' en el tema con Id '0'
+log 2021/06/07 18:46:20 Intentando obtener la lista de temas
+log 2021/06/07 18:46:20 Se ha validado correctamente el token
+log 2021/06/07 18:46:20 El usuario 'usu' ha obtenido la lista de temas con los datos cifrados
+log 2021/06/07 18:46:22 Intentando obtener la lista de temas
+log 2021/06/07 18:46:22 Se ha validado correctamente el token
+log 2021/06/07 18:46:22 El usuario 'usu' ha obtenido la lista de temas con los datos cifrados
+log 2021/06/07 18:46:31 Intentando crear una entrada nueva en un tema
+log 2021/06/07 18:46:31 Se ha validado correctamente el token
+log 2021/06/07 18:46:31 El usuario 'usu' esta intentando crear la entrada con Id '0' en el tema con Id '1'
+log 2021/06/07 18:46:34 Intentando obtener la lista de temas
+log 2021/06/07 18:46:34 Se ha validado correctamente el token
+log 2021/06/07 18:46:34 El usuario 'usu' ha obtenido la lista de temas con los datos cifrados
+log 2021/06/07 18:46:41 Intentando obtener la lista de temas
+log 2021/06/07 18:46:41 Se ha validado correctamente el token
+log 2021/06/07 18:46:41 El usuario 'usu' ha obtenido la lista de temas con los datos cifrados
+log 2021/06/07 18:46:42 Intentando obtener la lista de temas
+log 2021/06/07 18:46:42 Se ha validado correctamente el token
+log 2021/06/07 18:46:42 El usuario 'usu' ha obtenido la lista de temas con los datos cifrados
+log 2021/06/07 18:46:54 Intentando crear una entrada nueva en un tema
+log 2021/06/07 18:46:54 Se ha validado correctamente el token
+log 2021/06/07 18:46:54 El usuario 'usu' esta intentando crear la entrada con Id '0' en el tema con Id '2'
+log 2021/06/07 18:47:05 Un usuario ha intentado hacer login
+log 2021/06/07 18:47:05  Se ha generado el token 41eWzrI5kGtepg51 para el usuario 'usu2'
+log 2021/06/07 18:47:05 El usuario 'usu2' ha intentado hacer login con el resultado: 41eWzrI5kGtepg51
+log 2021/06/07 18:47:08 Intentando obtener la lista de temas
+log 2021/06/07 18:47:08 Se ha validado correctamente el token
+log 2021/06/07 18:47:08 El usuario 'usu2' ha obtenido la lista de temas con los datos cifrados
+log 2021/06/07 18:47:25 Intentando crear una entrada nueva en un tema
+log 2021/06/07 18:47:25 Se ha validado correctamente el token
+log 2021/06/07 18:47:25 El usuario 'usu2' esta intentando crear la entrada con Id '1' en el tema con Id '0'
+log 2021/06/07 18:47:27 Intentando obtener la lista de temas
+log 2021/06/07 18:47:27 Se ha validado correctamente el token
+log 2021/06/07 18:47:27 El usuario 'usu2' ha obtenido la lista de temas con los datos cifrados
+log 2021/06/07 18:47:28 Intentando obtener la lista de temas
+log 2021/06/07 18:47:28 Se ha validado correctamente el token
+log 2021/06/07 18:47:28 El usuario 'usu2' ha obtenido la lista de temas con los datos cifrados
+log 2021/06/07 18:47:34 Intentando crear una entrada nueva en un tema
+log 2021/06/07 18:47:34 Se ha validado correctamente el token
+log 2021/06/07 18:47:34 El usuario 'usu2' esta intentando crear la entrada con Id '1' en el tema con Id '2'
+log 2021/06/07 18:47:36 Intentando obtener la lista de temas
+log 2021/06/07 18:47:36 Se ha validado correctamente el token
+log 2021/06/07 18:47:36 El usuario 'usu2' ha obtenido la lista de temas con los datos cifrados
+log 2021/06/07 18:47:37 Intentando obtener la lista de temas
+log 2021/06/07 18:47:37 Se ha validado correctamente el token
+log 2021/06/07 18:47:37 El usuario 'usu2' ha obtenido la lista de temas con los datos cifrados
+log 2021/06/07 18:48:05 Un usuario ha intentado hacer login
+log 2021/06/07 18:48:05 El usuario 'usu' ha intentado hacer login con el resultado: Credenciales inválidas
+log 2021/06/07 18:48:14 Un usuario ha intentado hacer login
+log 2021/06/07 18:48:14 El usuario 'usu3' ha intentado hacer login con el resultado: Usuario inexistente
+log 2021/06/07 18:48:25 Intentando registrar un usuario
+log 2021/06/07 18:48:25 Error al crear el usuario: 'usu' -- Ya existe un usuario con ese nombre
+log 2021/06/07 18:48:36 Apagando servidor ...
+log 2021/06/07 18:48:36 Servidor detenido correctamente
+log 2021/06/07 19:01:11 Inicializando servidor...
+log 2021/06/07 19:02:01 Intentando registrar un usuario
+log 2021/06/07 19:02:01 Se ha creado el usuario: 'usu3'
+log 2021/06/07 19:07:33 Intentando registrar un usuario
+log 2021/06/07 19:07:33 Error al crear el usuario: 'usu3' -- Ya existe un usuario con ese nombre
+log 2021/06/07 19:07:50 Un usuario ha intentado hacer login
+log 2021/06/07 19:07:50  Se ha generado el token azkCJ2jxCayo4LBh para el usuario 'usu'
+log 2021/06/07 19:07:50 El usuario 'usu' ha intentado hacer login con el resultado: azkCJ2jxCayo4LBh
+log 2021/06/07 19:07:52 Intentando obtener la lista de temas
+log 2021/06/07 19:07:52 Se ha validado correctamente el token
+log 2021/06/07 19:07:52 El usuario 'usu' ha obtenido la lista de temas con los datos cifrados
+log 2021/06/07 19:07:59 Intentando obtener la lista de temas
+log 2021/06/07 19:07:59 Se ha validado correctamente el token
+log 2021/06/07 19:07:59 El usuario 'usu' ha obtenido la lista de temas con los datos cifrados
+log 2021/06/07 19:14:37 Intentando obtener las claves publicas de algunos usuarios
+log 2021/06/07 19:14:37 Se ha validado correctamente el token
+log 2021/06/07 19:14:37 El usuario 'usu' ha intentado obtener su clave publica y la de '3' usuarios mas
+log 2021/06/07 19:14:37 Intentando crear un tema nuevo
+log 2021/06/07 19:14:37 Se ha validado correctamente el token
+log 2021/06/07 19:14:37 El usuario 'usu' esta intentando crear un tema con Id '3'
+log 2021/06/07 19:14:42 Intentando obtener la lista de temas
+log 2021/06/07 19:14:42 Se ha validado correctamente el token
+log 2021/06/07 19:14:42 El usuario 'usu' ha obtenido la lista de temas con los datos cifrados
+log 2021/06/07 19:14:42 Intentando obtener la lista de temas
+log 2021/06/07 19:14:42 Se ha validado correctamente el token
+log 2021/06/07 19:14:42 El usuario 'usu' ha obtenido la lista de temas con los datos cifrados
+log 2021/06/07 19:14:52 Intentando obtener la lista de temas
+log 2021/06/07 19:14:52 Se ha validado correctamente el token
+log 2021/06/07 19:14:52 El usuario 'usu' ha obtenido la lista de temas con los datos cifrados
+log 2021/06/07 19:14:53 Intentando obtener la lista de temas
+log 2021/06/07 19:14:53 Se ha validado correctamente el token
+log 2021/06/07 19:14:53 El usuario 'usu' ha obtenido la lista de temas con los datos cifrados
+log 2021/06/07 19:15:03 Intentando crear una entrada nueva en un tema
+log 2021/06/07 19:15:03 Se ha validado correctamente el token
+log 2021/06/07 19:15:03 El usuario 'usu' esta intentando crear la entrada con Id '0' en el tema con Id '3'
+log 2021/06/07 19:15:04 Intentando crear una entrada nueva en un tema
+log 2021/06/07 19:15:04 Se ha validado correctamente el token
+log 2021/06/07 19:15:04 El usuario 'usu' esta intentando crear la entrada con Id '1' en el tema con Id '3'
+log 2021/06/07 19:15:06 Intentando obtener la lista de temas
+log 2021/06/07 19:15:06 Se ha validado correctamente el token
+log 2021/06/07 19:15:06 El usuario 'usu' ha obtenido la lista de temas con los datos cifrados
+log 2021/06/07 19:15:09 Intentando obtener la lista de temas
+log 2021/06/07 19:15:09 Se ha validado correctamente el token
+log 2021/06/07 19:15:09 El usuario 'usu' ha obtenido la lista de temas con los datos cifrados
+log 2021/06/07 19:25:46 Un usuario ha intentado hacer login
+log 2021/06/07 19:25:47  Se ha generado el token Qyk5gV0F6g4k2nvs para el usuario 'usu'
+log 2021/06/07 19:25:47 El usuario 'usu' ha intentado hacer login con el resultado: Qyk5gV0F6g4k2nvs
+log 2021/06/07 19:25:47 Intentando obtener la lista de temas
+log 2021/06/07 19:25:47 Se ha validado correctamente el token
+log 2021/06/07 19:25:47 El usuario 'usu' ha obtenido la lista de temas con los datos cifrados
+log 2021/06/07 19:25:54 Intentando obtener la lista de temas
+log 2021/06/07 19:25:54 Se ha validado correctamente el token
+log 2021/06/07 19:25:54 El usuario 'usu' ha obtenido la lista de temas con los datos cifrados
+log 2021/06/07 19:25:54 Intentando obtener la lista de temas
+log 2021/06/07 19:25:54 Se ha validado correctamente el token
+log 2021/06/07 19:25:54 El usuario 'usu' ha obtenido la lista de temas con los datos cifrados
+log 2021/06/07 19:26:10 Un usuario ha intentado hacer login
+log 2021/06/07 19:26:10 El usuario 'usu2' ha intentado hacer login con el resultado: Credenciales inválidas
+log 2021/06/07 19:26:13 Un usuario ha intentado hacer login
+log 2021/06/07 19:26:13  Se ha generado el token 092dDdXkrk1hOK7D para el usuario 'usu2'
+log 2021/06/07 19:26:13 El usuario 'usu2' ha intentado hacer login con el resultado: 092dDdXkrk1hOK7D
+log 2021/06/07 19:26:14 Intentando obtener la lista de temas
+log 2021/06/07 19:26:14 Se ha validado correctamente el token
+log 2021/06/07 19:26:14 El usuario 'usu2' ha obtenido la lista de temas con los datos cifrados
+log 2021/06/07 19:26:18 Intentando obtener la lista de temas
+log 2021/06/07 19:26:18 Se ha validado correctamente el token
+log 2021/06/07 19:26:18 El usuario 'usu2' ha obtenido la lista de temas con los datos cifrados
+log 2021/06/07 19:26:18 Intentando obtener la lista de temas
+log 2021/06/07 19:26:18 Se ha validado correctamente el token
+log 2021/06/07 19:26:18 El usuario 'usu2' ha obtenido la lista de temas con los datos cifrados
+log 2021/06/07 19:26:33 Intentando obtener la lista de temas
+log 2021/06/07 19:26:33 Se ha validado correctamente el token
+log 2021/06/07 19:26:34 El usuario 'usu2' ha obtenido la lista de temas con los datos cifrados
+log 2021/06/07 19:26:34 Intentando obtener la lista de temas
+log 2021/06/07 19:26:34 Se ha validado correctamente el token
+log 2021/06/07 19:26:34 El usuario 'usu2' ha obtenido la lista de temas con los datos cifrados
+log 2021/06/07 19:26:39 Intentando obtener la lista de temas
+log 2021/06/07 19:26:39 Se ha validado correctamente el token
+log 2021/06/07 19:26:39 El usuario 'usu2' ha obtenido la lista de temas con los datos cifrados
+log 2021/06/07 19:26:39 Intentando obtener la lista de temas
+log 2021/06/07 19:26:39 Se ha validado correctamente el token
+log 2021/06/07 19:26:39 El usuario 'usu2' ha obtenido la lista de temas con los datos cifrados
+log 2021/06/07 19:26:47 Intentando obtener la lista de temas
+log 2021/06/07 19:26:47 Se ha validado correctamente el token
+log 2021/06/07 19:26:47 El usuario 'usu2' ha obtenido la lista de temas con los datos cifrados
+log 2021/06/07 19:26:47 Intentando obtener la lista de temas
+log 2021/06/07 19:26:47 Se ha validado correctamente el token
+log 2021/06/07 19:26:47 El usuario 'usu2' ha obtenido la lista de temas con los datos cifrados
